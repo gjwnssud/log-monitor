@@ -33,17 +33,72 @@ Grafana (시각화) → http://localhost:3000
 - 원격 서버 SSH 접근 권한 (`~/.ssh/config` 설정 권장)
 - 원격 서버가 `systemd` 기반일 것 (journalctl 사용)
 
-## 사용법
+---
+
+## 사용법 — macOS / Linux
 
 ### 1. 설정 파일 준비
 
 ```bash
-# 서버 목록 설정
 cp servers.conf.example servers.conf
-
-# 환경 변수 설정 (포트, 리소스 조정 필요 시)
+# 필요 시 포트·리소스 조정
 cp .env.example .env
 ```
+
+### 2. 초기화
+
+```bash
+./setup.sh
+```
+
+### 3. 컨테이너 실행
+
+```bash
+docker compose up -d
+```
+
+### 4. SSH 로그 스트리밍 시작
+
+```bash
+./stream-logs.sh
+# 백그라운드 실행
+./stream-logs.sh &
+```
+
+---
+
+## 사용법 — Windows
+
+> Windows 10 이상 (OpenSSH, PowerShell 5.1+ 필요)
+
+### 1. 설정 파일 준비
+
+```bat
+copy servers.conf.example servers.conf
+copy .env.example .env
+```
+
+### 2. 초기화
+
+```bat
+setup.bat
+```
+
+### 3. 컨테이너 실행
+
+```bat
+docker compose up -d
+```
+
+### 4. SSH 로그 스트리밍 시작
+
+```bat
+stream-logs.bat
+```
+
+---
+
+## 공통 설정
 
 **servers.conf 형식:**
 ```
@@ -58,38 +113,28 @@ server-1    app-server-1   my-app-service
 | ssh-host | `~/.ssh/config`에 등록된 Host명 또는 IP |
 | service-name | `journalctl -u [service-name]`에 사용되는 systemd 서비스명 |
 
-### 2. 초기화
+**로그 로테이션:**
 
-```bash
-./setup.sh
+스트리밍 중 파일 크기가 일정 기준을 초과하면 자동으로 rotate됩니다.
+기본값은 `stream-logs.sh` / `stream-logs.ps1` 상단에서 변경할 수 있습니다.
+
+| 설정 | 기본값 | 설명 |
+|------|--------|------|
+| `MAX_SIZE_MB` | 50 | 로테이션 기준 파일 크기 (MB) |
+| `ROTATE_KEEP` | 5 | 보관할 로테이션 파일 개수 |
+| `CHECK_INTERVAL` | 30 | 크기 체크 주기 (초) |
+
+```
+data/logs/
+├── server-1.log      ← 현재 스트리밍 중
+├── server-1.log.1    ← 가장 최근 rotate된 파일
+├── server-1.log.2
+└── ...
 ```
 
-- `.env` 파일 자동 생성 (없을 경우)
-- `data/` 디렉토리 생성
-- `servers.conf` 기반으로 `alloy-config.alloy` 자동 생성
+---
 
-### 3. 컨테이너 실행
-
-```bash
-docker compose up -d
-```
-
-### 4. SSH 로그 스트리밍 시작
-
-```bash
-./stream-logs.sh
-```
-
-- `servers.conf`의 각 서버에 SSH 접속 후 로그 스트리밍
-- `data/logs/{alias}.log` 파일로 저장
-- `Ctrl+C`로 종료
-
-백그라운드 실행:
-```bash
-./stream-logs.sh &
-```
-
-### 5. Grafana 접속
+## Grafana 접속
 
 브라우저에서 `http://localhost:3000` 접속 후:
 
@@ -98,9 +143,9 @@ docker compose up -d
 3. **Explore** 메뉴에서 `{job="logs"}` 쿼리로 로그 확인
 4. 서버별 필터: `{server="server-1"}`
 
-### 6. Alloy UI (선택)
+**Alloy UI:** `http://localhost:12345` — 컴포넌트 상태 및 로그 수집 현황 확인
 
-`http://localhost:12345` — Alloy 컴포넌트 상태 및 로그 수집 현황 확인
+---
 
 ## 디렉토리 구조
 
@@ -110,14 +155,19 @@ log-monitor/
 ├── servers.conf.example          # 서버 목록 예시
 ├── docker-compose.yml            # 컨테이너 구성
 ├── alloy-config.template.alloy   # Alloy 설정 템플릿
-├── setup.sh                      # 초기화 스크립트
-├── stream-logs.sh                # SSH 스트리밍 스크립트
+├── setup.sh                      # 초기화 스크립트 (macOS/Linux)
+├── setup.bat                     # 초기화 스크립트 (Windows)
+├── stream-logs.sh                # SSH 스트리밍 + 로테이션 (macOS/Linux)
+├── stream-logs.bat               # SSH 스트리밍 진입점 (Windows)
+├── stream-logs.ps1               # SSH 스트리밍 + 로테이션 (Windows PowerShell)
 └── data/                         # 볼륨 데이터 (gitignore)
     ├── loki/
     ├── grafana/
     ├── alloy/
     └── logs/
 ```
+
+---
 
 ## SSH 점프 호스트 설정
 
@@ -137,5 +187,5 @@ Host app-server-1
 
 ## 주의사항
 
-- `stream-logs.sh` 종료 시 SSH 연결이 끊겨 로그 수집이 중단됩니다. 백그라운드 또는 `tmux` 세션 내에서 실행하세요.
+- `stream-logs.sh` / `stream-logs.bat` 종료 시 SSH 연결이 끊겨 로그 수집이 중단됩니다. 백그라운드 또는 `tmux` 세션 내에서 실행하세요.
 - `servers.conf`와 `.env`는 보안 정보가 포함될 수 있으므로 git에 포함되지 않습니다.

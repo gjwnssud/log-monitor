@@ -51,6 +51,15 @@ cp .env.example .env
 ./setup.sh
 ```
 
+실행 시 수집 방식을 선택합니다:
+
+```
+[setup] Alloy 수집 방식을 선택하세요:
+  1) SSH 스트리밍       (서버 설치 권한 없음, stream-logs.sh 사용)
+  2) Journal 직접 읽기  (서버에 Alloy 설치, systemd 서비스 로그)
+  3) 파일 직접 읽기     (서버에 Alloy 설치, 파일 경로 지정)
+```
+
 ### 3. 컨테이너 실행
 
 ```bash
@@ -82,6 +91,15 @@ copy .env.example .env
 
 ```bat
 setup.bat
+```
+
+실행 시 수집 방식을 선택합니다:
+
+```
+[setup] Alloy 수집 방식을 선택하세요:
+  1) SSH 스트리밍       (서버 설치 권한 없음, stream-logs.bat 사용)
+  2) Journal 직접 읽기  (서버에 Alloy 설치, systemd 서비스 로그)
+  3) 파일 직접 읽기     (서버에 Alloy 설치, 파일 경로 지정)
 ```
 
 ### 3. 컨테이너 실행

@@ -41,7 +41,7 @@ case "$CHOICE" in
     check_servers_conf
     TEMPLATE="$SCRIPT_DIR/alloy-config.template.alloy"
 
-    grep -v "// __SERVERS__" "$TEMPLATE" > "$OUTPUT"
+    cp "$TEMPLATE" "$OUTPUT"
 
     TEMP_FILE=$(mktemp)
     while IFS= read -r line || [ -n "$line" ]; do

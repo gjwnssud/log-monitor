@@ -1,0 +1,25 @@
+// Alloy configuration for server-side journal collection
+// 서버에 직접 설치할 때 사용하는 설정 파일입니다.
+// 각 서버에 복사 후 SERVER_ALIAS와 LOKI_HOST를 수정하세요.
+
+loki.source.journal "local" {
+  forward_to = [loki.write.default.receiver]
+
+  // Alloy 시작 시 소급 읽기 범위 (뒤늦게 시작해도 과거 로그 수집 가능)
+  max_age = "12h"
+
+  labels = {
+    job    = "logs",
+    server = "SERVER_ALIAS",  // 이 서버를 식별할 이름으로 변경
+  }
+
+  // 특정 서비스만 수집할 경우 아래 주석 해제 후 서비스명 수정
+  // matches = "_SYSTEMD_UNIT=my-service.service"
+}
+
+loki.write "default" {
+  endpoint {
+    // 중앙 Loki 서버 주소로 변경
+    url = "http://LOKI_HOST:3100/loki/api/v1/push"
+  }
+}

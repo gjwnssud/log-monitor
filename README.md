@@ -154,7 +154,8 @@ log-monitor/
 ├── .env.example                  # 포트·리소스 설정 예시
 ├── servers.conf.example          # 서버 목록 예시
 ├── docker-compose.yml            # 컨테이너 구성
-├── alloy-config.template.alloy   # Alloy 설정 템플릿
+├── alloy-config.template.alloy          # Alloy 설정 템플릿 (SSH 스트리밍 방식)
+├── alloy-config-journal.template.alloy  # Alloy 설정 템플릿 (서버 직접 설치 방식)
 ├── setup.sh                      # 초기화 스크립트 (macOS/Linux)
 ├── setup.bat                     # 초기화 스크립트 (Windows)
 ├── stream-logs.sh                # SSH 스트리밍 + 로테이션 (macOS/Linux)
@@ -166,6 +167,46 @@ log-monitor/
     ├── alloy/
     └── logs/
 ```
+
+---
+
+## 서버에 Alloy 직접 설치하는 경우
+
+원격 서버에 설치 권한이 있다면 SSH 스트리밍 없이 각 서버에서 직접 journal을 읽어 Loki로 전송할 수 있습니다.
+`max_age` 설정으로 Alloy 시작 이전 로그도 소급 수집이 가능합니다.
+
+### 1. 각 서버에 Alloy 설치
+
+```bash
+# Linux (AMD64)
+curl -L https://github.com/grafana/alloy/releases/latest/download/alloy-linux-amd64.zip -o alloy.zip
+unzip alloy.zip && chmod +x alloy-linux-amd64
+```
+
+### 2. 설정 파일 복사 및 수정
+
+```bash
+cp alloy-config-journal.template.alloy /etc/alloy/config.alloy
+```
+
+`config.alloy`에서 두 곳 수정:
+- `SERVER_ALIAS` → 이 서버를 식별할 이름 (예: `edge-1`)
+- `LOKI_HOST` → 중앙 Loki 서버 IP (예: `192.168.0.10`)
+
+### 3. 실행
+
+```bash
+./alloy-linux-amd64 run /etc/alloy/config.alloy
+```
+
+### SSH 스트리밍 방식과 비교
+
+| | SSH 스트리밍 (방법 2) | 서버 설치 (방법 1) |
+|--|--|--|
+| 서버 설치 권한 | 불필요 | 필요 |
+| 과거 로그 소급 | 불가 | 가능 (`max_age`) |
+| 안정성 | SSH 연결에 의존 | 서버 데몬으로 안정적 |
+| 파일 로테이션 | 필요 | 불필요 (journal 직접 읽음) |
 
 ---
 

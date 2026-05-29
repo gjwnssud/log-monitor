@@ -155,7 +155,8 @@ log-monitor/
 ├── servers.conf.example          # 서버 목록 예시
 ├── docker-compose.yml            # 컨테이너 구성
 ├── alloy-config.template.alloy          # Alloy 설정 템플릿 (SSH 스트리밍 방식)
-├── alloy-config-journal.template.alloy  # Alloy 설정 템플릿 (서버 직접 설치 방식)
+├── alloy-config-journal.template.alloy  # Alloy 설정 템플릿 (서버 설치 - systemd journal)
+├── alloy-config-file.template.alloy     # Alloy 설정 템플릿 (서버 설치 - 파일 직접 읽기)
 ├── setup.sh                      # 초기화 스크립트 (macOS/Linux)
 ├── setup.bat                     # 초기화 스크립트 (Windows)
 ├── stream-logs.sh                # SSH 스트리밍 + 로테이션 (macOS/Linux)
@@ -199,14 +200,15 @@ cp alloy-config-journal.template.alloy /etc/alloy/config.alloy
 ./alloy-linux-amd64 run /etc/alloy/config.alloy
 ```
 
-### SSH 스트리밍 방식과 비교
+### 템플릿 선택 기준
 
-| | SSH 스트리밍 (방법 2) | 서버 설치 (방법 1) |
-|--|--|--|
-| 서버 설치 권한 | 불필요 | 필요 |
-| 과거 로그 소급 | 불가 | 가능 (`max_age`) |
-| 안정성 | SSH 연결에 의존 | 서버 데몬으로 안정적 |
-| 파일 로테이션 | 필요 | 불필요 (journal 직접 읽음) |
+| | SSH 스트리밍 | 서버 설치 (journal) | 서버 설치 (file) |
+|--|--|--|--|
+| 서버 설치 권한 | 불필요 | 필요 | 필요 |
+| 대상 로그 | journalctl | systemd 서비스 | 파일 경로 직접 지정 |
+| 과거 로그 소급 | 불가 | 가능 (`max_age`) | 부분 가능 (`*.log*`) |
+| 파일 로테이션 | 수동 필요 | 불필요 | inode 기반 자동 처리 |
+| 안정성 | SSH 연결에 의존 | 서버 데몬 | 서버 데몬 |
 
 ---
 

@@ -1,0 +1,30 @@
+// Alloy configuration for server-side file collection
+// 서버에 직접 설치할 때 사용하는 설정 파일입니다. (파일 기반 로그)
+// 각 서버에 복사 후 SERVER_ALIAS, LOKI_HOST, 로그 경로를 수정하세요.
+
+local.file_match "local" {
+  path_targets = [{
+    // [권장] 현재 로그 파일만 감시
+    // Alloy 지속 실행 중에는 inode 기반으로 로테이션을 자동 감지합니다.
+    __path__ = "/var/log/my-app/*.log",
+
+    // [선택] 로테이션된 파일까지 감시 (뒤늦게 시작할 때 누락 방지)
+    // 주의: Alloy가 이미 읽은 파일이 로테이션되면 중복 전송이 발생할 수 있습니다.
+    // __path__ = "/var/log/my-app/*.log*",
+
+    job    = "logs",
+    server = "SERVER_ALIAS",  // 이 서버를 식별할 이름으로 변경
+  }]
+}
+
+loki.source.file "local" {
+  targets    = local.file_match.local.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    // 중앙 Loki 서버 주소로 변경
+    url = "http://LOKI_HOST:3100/loki/api/v1/push"
+  }
+}

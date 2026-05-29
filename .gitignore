@@ -1,0 +1,9 @@
+# 환경 설정 (개인 정보 포함)
+.env
+servers.conf
+
+# setup.sh가 생성하는 파일
+promtail-config.yml
+
+# 데이터 볼륨
+data/

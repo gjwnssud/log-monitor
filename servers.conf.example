@@ -1,0 +1,10 @@
+# 서버 목록 설정
+# 형식: alias  ssh-host  service-name
+# alias       : 로그 파일명 및 Grafana 라벨로 사용 (영문, 숫자, 하이픈만)
+# ssh-host    : ~/.ssh/config에 등록된 Host명 또는 IP
+# service-name: journalctl -u [service-name] 에 사용되는 systemd 서비스명
+
+controller  bastion-host   my-controller-service
+server-1    app-server-1   my-app-service
+server-2    app-server-2   my-app-service
+server-3    app-server-3   my-app-service

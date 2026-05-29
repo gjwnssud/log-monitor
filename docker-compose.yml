@@ -1,0 +1,58 @@
+services:
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./data/loki:/loki
+    deploy:
+      resources:
+        limits:
+          cpus: "${LOKI_CPU_LIMIT:-1.0}"
+          memory: "${LOKI_MEM_LIMIT:-512M}"
+        reservations:
+          cpus: "${LOKI_CPU_RESERVE:-0.25}"
+          memory: "${LOKI_MEM_RESERVE:-256M}"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    deploy:
+      resources:
+        limits:
+          cpus: "${GRAFANA_CPU_LIMIT:-1.0}"
+          memory: "${GRAFANA_MEM_LIMIT:-512M}"
+        reservations:
+          cpus: "${GRAFANA_CPU_RESERVE:-0.25}"
+          memory: "${GRAFANA_MEM_RESERVE:-256M}"
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - ./data/logs:/logs
+    command: -config.file=/etc/promtail/config.yml
+    deploy:
+      resources:
+        limits:
+          cpus: "${PROMTAIL_CPU_LIMIT:-0.5}"
+          memory: "${PROMTAIL_MEM_LIMIT:-256M}"
+        reservations:
+          cpus: "${PROMTAIL_CPU_RESERVE:-0.1}"
+          memory: "${PROMTAIL_MEM_RESERVE:-128M}"
+    depends_on:
+      - loki
+    restart: unless-stopped

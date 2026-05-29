@@ -10,7 +10,7 @@
     ↓ SSH 스트리밍
 data/logs/*.log (로컬)
     ↓
-Promtail (로그 수집)
+Alloy (로그 수집)
     ↓
 Loki (로그 저장)
     ↓
@@ -21,7 +21,7 @@ Grafana (시각화) → http://localhost:3000
 
 | 역할 | 기술 |
 |------|------|
-| 로그 수집 | [Promtail](https://grafana.com/docs/loki/latest/send-data/promtail/) |
+| 로그 수집 | [Grafana Alloy](https://grafana.com/docs/alloy/) |
 | 로그 저장 | [Grafana Loki](https://grafana.com/oss/loki/) |
 | 시각화 | [Grafana](https://grafana.com/oss/grafana/) |
 | 컨테이너 | Docker Compose |
@@ -66,7 +66,7 @@ server-1    app-server-1   my-app-service
 
 - `.env` 파일 자동 생성 (없을 경우)
 - `data/` 디렉토리 생성
-- `servers.conf` 기반으로 `promtail-config.yml` 자동 생성
+- `servers.conf` 기반으로 `alloy-config.alloy` 자동 생성
 
 ### 3. 컨테이너 실행
 
@@ -84,6 +84,11 @@ docker compose up -d
 - `data/logs/{alias}.log` 파일로 저장
 - `Ctrl+C`로 종료
 
+백그라운드 실행:
+```bash
+./stream-logs.sh &
+```
+
 ### 5. Grafana 접속
 
 브라우저에서 `http://localhost:3000` 접속 후:
@@ -93,6 +98,10 @@ docker compose up -d
 3. **Explore** 메뉴에서 `{job="logs"}` 쿼리로 로그 확인
 4. 서버별 필터: `{server="server-1"}`
 
+### 6. Alloy UI (선택)
+
+`http://localhost:12345` — Alloy 컴포넌트 상태 및 로그 수집 현황 확인
+
 ## 디렉토리 구조
 
 ```
@@ -100,12 +109,13 @@ log-monitor/
 ├── .env.example                  # 포트·리소스 설정 예시
 ├── servers.conf.example          # 서버 목록 예시
 ├── docker-compose.yml            # 컨테이너 구성
-├── promtail-config.template.yml  # Promtail 설정 템플릿
+├── alloy-config.template.alloy   # Alloy 설정 템플릿
 ├── setup.sh                      # 초기화 스크립트
 ├── stream-logs.sh                # SSH 스트리밍 스크립트
 └── data/                         # 볼륨 데이터 (gitignore)
     ├── loki/
     ├── grafana/
+    ├── alloy/
     └── logs/
 ```
 
@@ -127,5 +137,5 @@ Host app-server-1
 
 ## 주의사항
 
-- `stream-logs.sh` 종료 시 SSH 연결이 끊겨 로그 수집이 중단됩니다. 데몬으로 운영하려면 `tmux` 또는 `screen` 세션 내에서 실행하세요.
+- `stream-logs.sh` 종료 시 SSH 연결이 끊겨 로그 수집이 중단됩니다. 백그라운드 또는 `tmux` 세션 내에서 실행하세요.
 - `servers.conf`와 `.env`는 보안 정보가 포함될 수 있으므로 git에 포함되지 않습니다.

@@ -3,7 +3,7 @@
 servers.conf
 
 # setup.sh가 생성하는 파일
-promtail-config.yml
+alloy-config.alloy
 
 # 데이터 볼륨
 data/

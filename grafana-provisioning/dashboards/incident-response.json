@@ -19,12 +19,22 @@
   "id": null,
   "links": [],
   "panels": [
+
+    {
+      "id": 9,
+      "type": "row",
+      "title": "📊 통계 현황",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+
     {
       "id": 1,
       "type": "stat",
       "title": "ERROR 건수",
       "description": "선택 기간 내 ERROR 로그 총 건수",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -64,7 +74,7 @@
       "type": "stat",
       "title": "WARN 건수",
       "description": "선택 기간 내 WARN 로그 총 건수",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -104,7 +114,7 @@
       "type": "stat",
       "title": "FATAL 건수",
       "description": "선택 기간 내 FATAL 로그 총 건수",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -144,7 +154,7 @@
       "type": "stat",
       "title": "Error/min (최근 5분)",
       "description": "최근 5분 기준 ERROR+FATAL 발생률 (건/분)",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -181,11 +191,12 @@
         "overrides": []
       }
     },
+
     {
       "id": 5,
       "type": "timeseries",
       "title": "Error / Warn 추이 (레벨별, 건/분)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -247,7 +258,7 @@
       "id": 6,
       "type": "timeseries",
       "title": "Error 추이 (서버별, 건/분)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -280,37 +291,13 @@
         "overrides": []
       }
     },
-    {
-      "id": 7,
-      "type": "logs",
-      "title": "장애 로그 스트림 (ERROR / WARN / FATAL)",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
-      "datasource": { "type": "loki", "uid": "loki" },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "{job=\"logs\",level=~\"ERROR|WARN|FATAL\",server=~\"$server\"}",
-          "queryType": "range",
-          "legendFormat": ""
-        }
-      ],
-      "options": {
-        "showLabels": true,
-        "showTime": true,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending",
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false
-      },
-      "fieldConfig": { "defaults": {}, "overrides": [] }
-    },
+
     {
       "id": 8,
       "type": "table",
       "title": "서버별 로그 레벨 현황",
       "description": "선택 기간 내 서버별 ERROR / WARN / FATAL 건수",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 22 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -413,7 +400,43 @@
           }
         ]
       }
+    },
+
+    {
+      "id": 10,
+      "type": "row",
+      "title": "📋 실시간 로그",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "collapsed": false,
+      "panels": []
+    },
+
+    {
+      "id": 7,
+      "type": "logs",
+      "title": "장애 로그 스트림 (ERROR / WARN / FATAL)",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 22 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"logs\",level=~\"ERROR|WARN|FATAL\",server=~\"$server\"}",
+          "queryType": "range",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showLabels": true,
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
+      },
+      "fieldConfig": { "defaults": {}, "overrides": [] }
     }
+
   ],
   "refresh": "30s",
   "schemaVersion": 38,

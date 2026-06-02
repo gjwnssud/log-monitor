@@ -23,7 +23,7 @@
     {
       "id": 9,
       "type": "row",
-      "title": "📊 통계 현황",
+      "title": "🚨 에러 통계",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "collapsed": false,
       "panels": []

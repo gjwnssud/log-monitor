@@ -170,20 +170,53 @@ data/logs/
 
 `grafana-provisioning/dashboards/incident-response.json`에 정의된 대시보드가 자동 로드됩니다.
 
+대시보드는 두 섹션으로 구성됩니다 (각 섹션은 접기/펼치기 가능):
+
+**🚨 에러 통계**
+
 | 패널 | 내용 |
 |------|------|
 | ERROR / WARN / FATAL 건수 | 선택 기간 총 건수, 임계치 색상 표시 |
-| Error/min | 최근 5분 ERROR+FATAL 발생률 |
-| 레벨별 추이 | ERROR / WARN / FATAL rate over time |
-| 서버별 추이 | 서버별 ERROR rate over time |
-| 장애 로그 스트림 | ERROR / WARN / FATAL 실시간 로그 |
-| 서버별 현황 | 서버 × 레벨 건수 테이블 |
+| Error/min | 최근 5분 ERROR+FATAL 발생률 (건/분) |
+| 레벨별 추이 | ERROR / WARN / FATAL rate (건/분) over time |
+| 서버별 추이 | 서버별 ERROR+FATAL rate (건/분) over time |
+| 서버별 현황 | 서버 × 레벨 건수 테이블 (ERROR 기준 내림차순) |
 
-상단 **서버 드롭다운**으로 특정 서버만 필터링할 수 있습니다.
+**📋 실시간 로그**
+
+| 패널 | 내용 |
+|------|------|
+| 로그 스트림 | 선택한 레벨·서버·검색어 기준 실시간 로그 |
+
+### 상단 필터
+
+| 필터 | 설명 |
+|------|------|
+| 서버 | 멀티셀렉, 특정 서버만 필터링 |
+| 로그 레벨 | 멀티셀렉 (TRACE / DEBUG / INFO / WARN / ERROR / FATAL / All) |
+| 로그 검색 | 자유 텍스트 입력, 로그 스트림에서 grep 방식으로 필터링 |
+
+### UI에서 대시보드 수정
+
+`allowUiUpdates: true` 설정으로 Grafana UI에서 직접 수정·저장이 가능합니다.
+수정 내용은 Grafana 내부 DB(`data/grafana/`)에 저장되며, JSON 파일과는 별개로 관리됩니다.
+JSON 파일에 반영하려면 UI에서 **Share → Export → Save to file** 후 파일을 교체하세요.
 
 ### log4j2 패턴이 다를 경우
 
-Alloy 설정의 `stage.regex`에서 `expression`을 교체합니다:
+Alloy 설정의 `loki.process "log4j2"` 블록에서 두 가지를 조정합니다.
+
+**① 타임스탬프 추출 (`stage.regex` + `stage.timestamp`)**
+
+로그 발생 시간을 정확히 Loki에 저장하기 위해 로그 라인에서 타임스탬프를 파싱합니다.
+
+| 수집 방식 | 로그 포맷 | expression | format |
+|---|---|---|---|
+| SSH 스트리밍 (journald 출력) | `2026-01-01T12:00:00+09:00 host java[pid]: ...` | `` `^(?P<log_time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2})` `` | `RFC3339` |
+| 파일 직접 읽기 (log4j2 파일) | `[2026-01-01T12:00:00,123] [ERROR] ...` | `` `^\[(?P<log_time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})` `` | `2006-01-02T15:04:05` |
+| journal 직접 읽기 | — | 불필요 (systemd 타임스탬프 자동 사용) | — |
+
+**② 레벨 추출 (`stage.regex` + `stage.labels`)**
 
 | log4j2 패턴 | 출력 예시 | expression |
 |---|---|---|

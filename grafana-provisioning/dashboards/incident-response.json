@@ -184,25 +184,25 @@
     {
       "id": 5,
       "type": "timeseries",
-      "title": "Error / Warn 추이 (레벨별)",
+      "title": "Error / Warn 추이 (레벨별, 건/분)",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({job=\"logs\",level=\"ERROR\",server=~\"$server\"}[$__interval]))",
+          "expr": "sum(rate({job=\"logs\",level=\"ERROR\",server=~\"$server\"}[$__interval])) * 60",
           "queryType": "range",
           "legendFormat": "ERROR"
         },
         {
           "refId": "B",
-          "expr": "sum(rate({job=\"logs\",level=\"WARN\",server=~\"$server\"}[$__interval]))",
+          "expr": "sum(rate({job=\"logs\",level=\"WARN\",server=~\"$server\"}[$__interval])) * 60",
           "queryType": "range",
           "legendFormat": "WARN"
         },
         {
           "refId": "C",
-          "expr": "sum(rate({job=\"logs\",level=\"FATAL\",server=~\"$server\"}[$__interval]))",
+          "expr": "sum(rate({job=\"logs\",level=\"FATAL\",server=~\"$server\"}[$__interval])) * 60",
           "queryType": "range",
           "legendFormat": "FATAL"
         }
@@ -246,13 +246,13 @@
     {
       "id": 6,
       "type": "timeseries",
-      "title": "Error 추이 (서버별)",
+      "title": "Error 추이 (서버별, 건/분)",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({job=\"logs\",level=~\"ERROR|FATAL\",server=~\"$server\"}[$__interval])) by (server)",
+          "expr": "sum(rate({job=\"logs\",level=~\"ERROR|FATAL\",server=~\"$server\"}[$__interval])) by (server) * 60",
           "queryType": "range",
           "legendFormat": "{{server}}"
         }

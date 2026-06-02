@@ -17,10 +17,12 @@ loki.source.journal "local" {
   // matches = "_SYSTEMD_UNIT=my-service.service"
 }
 
-// log4j2 텍스트 포맷에서 level 라벨 추출
-// 패턴에 따라 expression 조정:
-//   [%p]    형식 (예: [ERROR])  → \[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]
-//   %-5level 형식 (예: ERROR  ) → \b(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\b
+// journal 모드는 systemd가 관리하는 __REALTIME_TIMESTAMP를 Alloy가 자동으로 사용하므로
+// stage.timestamp 불필요 — 로그 발생 시간이 그대로 Loki에 저장됩니다.
+//
+// log4j2 레벨 추출 → Loki 라벨로 등록
+// [%p]    형식 (예: [ERROR]):  \[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]
+// %-5level 형식 (예: ERROR  ): \b(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\b
 loki.process "log4j2" {
   forward_to = [loki.write.default.receiver]
 

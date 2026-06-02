@@ -432,7 +432,8 @@
         "sortOrder": "Descending",
         "dedupStrategy": "none",
         "enableLogDetails": true,
-        "prettifyLogMessage": false
+        "prettifyLogMessage": false,
+        "liveNow": true
       },
       "fieldConfig": { "defaults": {}, "overrides": [] }
     }

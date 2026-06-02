@@ -6,6 +6,7 @@ services:
       - "${LOKI_PORT:-3100}:3100"
     volumes:
       - ./data/loki:/loki
+      - ./loki-config.yml:/etc/loki/local-config.yaml
     deploy:
       resources:
         limits:

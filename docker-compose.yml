@@ -26,6 +26,7 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
       - ./data/grafana:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
     deploy:
       resources:
         limits:

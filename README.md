@@ -1,6 +1,6 @@
 # log-monitor
 
-여러 원격 서버의 로그를 SSH 스트리밍으로 수집하여 Grafana 대시보드에서 실시간으로 모니터링하는 템플릿입니다.
+여러 원격 서버의 log4j2 형식 Spring Boot 로그를 수집하여 Grafana 대시보드에서 실시간으로 모니터링하는 템플릿입니다.
 원격 서버에 별도 에이전트를 설치할 수 없는 환경에서도 사용할 수 있습니다.
 
 ## 구성
@@ -10,11 +10,12 @@
     ↓ SSH 스트리밍
 data/logs/*.log (로컬)
     ↓
-Alloy (로그 수집)
+Alloy (로그 수집 + level 라벨 추출)
     ↓
 Loki (로그 저장)
     ↓
 Grafana (시각화) → http://localhost:3000
+  └─ 장애 대응 대시보드 자동 로드
 ```
 
 ## 기술 스택
@@ -154,14 +155,56 @@ data/logs/
 
 ## Grafana 접속
 
-브라우저에서 `http://localhost:3000` 접속 후:
+브라우저에서 `http://localhost:3000` 접속 — Loki 데이터소스와 대시보드가 **자동으로 프로비저닝**됩니다.
 
-1. **Connections → Add new data source → Loki** 선택
-2. URL: `http://loki:3100` 입력 후 저장
-3. **Explore** 메뉴에서 `{job="logs"}` 쿼리로 로그 확인
-4. 서버별 필터: `{server="server-1"}`
+- **장애 대응 대시보드**: Dashboards 메뉴 → `Spring Boot 장애 대응`
+- **직접 탐색**: Explore 메뉴 → `{job="logs"}` 쿼리로 전체 로그 확인
+- **서버 필터**: `{job="logs", server="server-1"}`
+- **에러만 보기**: `{job="logs", level="ERROR"}`
 
 **Alloy UI:** `http://localhost:12345` — 컴포넌트 상태 및 로그 수집 현황 확인
+
+---
+
+## 장애 대응 대시보드
+
+`grafana-provisioning/dashboards/incident-response.json`에 정의된 대시보드가 자동 로드됩니다.
+
+| 패널 | 내용 |
+|------|------|
+| ERROR / WARN / FATAL 건수 | 선택 기간 총 건수, 임계치 색상 표시 |
+| Error/min | 최근 5분 ERROR+FATAL 발생률 |
+| 레벨별 추이 | ERROR / WARN / FATAL rate over time |
+| 서버별 추이 | 서버별 ERROR rate over time |
+| 장애 로그 스트림 | ERROR / WARN / FATAL 실시간 로그 |
+| 서버별 현황 | 서버 × 레벨 건수 테이블 |
+
+상단 **서버 드롭다운**으로 특정 서버만 필터링할 수 있습니다.
+
+### log4j2 패턴이 다를 경우
+
+Alloy 설정의 `stage.regex`에서 `expression`을 교체합니다:
+
+| log4j2 패턴 | 출력 예시 | expression |
+|---|---|---|
+| `[%p]` (기본값) | `[ERROR]` | `` `\[(?P<level>TRACE\|DEBUG\|INFO\|WARN\|ERROR\|FATAL)\]` `` |
+| `%-5level` | `ERROR ` | `` `\b(?P<level>TRACE\|DEBUG\|INFO\|WARN\|ERROR\|FATAL)\b` `` |
+
+수정 대상 파일: `alloy-config.template.alloy`, `alloy-config-file.template.alloy`, `alloy-config-journal.template.alloy`
+
+---
+
+## 데이터 초기화 (재수집)
+
+기존에 수집된 로그를 지우고 처음부터 다시 수집하려면:
+
+```bash
+docker compose down
+rm -rf data/loki data/alloy data/grafana
+docker compose up -d
+```
+
+> `data/logs/`는 원본 로그 파일이므로 삭제하지 않습니다.
 
 ---
 
@@ -180,6 +223,12 @@ log-monitor/
 ├── stream-logs.sh                # SSH 스트리밍 + 로테이션 (macOS/Linux)
 ├── stream-logs.bat               # SSH 스트리밍 진입점 (Windows)
 ├── stream-logs.ps1               # SSH 스트리밍 + 로테이션 (Windows PowerShell)
+├── grafana-provisioning/         # Grafana 프로비저닝 설정
+│   ├── datasources/
+│   │   └── loki.yml              # Loki 데이터소스 자동 등록
+│   └── dashboards/
+│       ├── dashboards.yml        # 대시보드 파일 경로 등록
+│       └── incident-response.json  # Spring Boot 장애 대응 대시보드
 └── data/                         # 볼륨 데이터 (gitignore)
     ├── loki/
     ├── grafana/

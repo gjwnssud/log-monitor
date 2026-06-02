@@ -9,7 +9,23 @@ local.file_match "servers" {
 
 loki.source.file "servers" {
   targets    = local.file_match.servers.targets
+  forward_to = [loki.process.log4j2.receiver]
+}
+
+// log4j2 텍스트 포맷에서 level 라벨 추출
+// 패턴에 따라 expression 조정:
+//   [%p]    형식 (예: [ERROR])  → \[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]
+//   %-5level 형식 (예: ERROR  ) → \b(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\b
+loki.process "log4j2" {
   forward_to = [loki.write.default.receiver]
+
+  stage.regex {
+    expression = `\[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]`
+  }
+
+  stage.labels {
+    values = { level = "" }
+  }
 }
 
 loki.write "default" {

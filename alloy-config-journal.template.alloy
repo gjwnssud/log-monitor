@@ -3,7 +3,7 @@
 // 각 서버에 복사 후 SERVER_ALIAS와 LOKI_HOST를 수정하세요.
 
 loki.source.journal "local" {
-  forward_to = [loki.write.default.receiver]
+  forward_to = [loki.process.log4j2.receiver]
 
   // Alloy 시작 시 소급 읽기 범위 (뒤늦게 시작해도 과거 로그 수집 가능)
   max_age = "12h"
@@ -15,6 +15,22 @@ loki.source.journal "local" {
 
   // 특정 서비스만 수집할 경우 아래 주석 해제 후 서비스명 수정
   // matches = "_SYSTEMD_UNIT=my-service.service"
+}
+
+// log4j2 텍스트 포맷에서 level 라벨 추출
+// 패턴에 따라 expression 조정:
+//   [%p]    형식 (예: [ERROR])  → \[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]
+//   %-5level 형식 (예: ERROR  ) → \b(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\b
+loki.process "log4j2" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.regex {
+    expression = `\[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]`
+  }
+
+  stage.labels {
+    values = { level = "" }
+  }
 }
 
 loki.write "default" {

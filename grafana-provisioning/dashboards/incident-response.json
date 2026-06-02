@@ -420,7 +420,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{job=\"logs\",level=~\"ERROR|WARN|FATAL\",server=~\"$server\"}",
+          "expr": "{job=\"logs\",level=~\"ERROR|WARN|FATAL\",server=~\"$server\"} |= \"$search\"",
           "queryType": "range",
           "legendFormat": ""
         }
@@ -458,6 +458,16 @@
         "sort": 1,
         "type": "query",
         "label": "서버"
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "label": "로그 검색",
+        "description": "로그 스트림에서 특정 텍스트를 포함한 라인만 표시 (비워두면 전체 표시)",
+        "hide": 0,
+        "current": { "value": "" },
+        "query": "",
+        "skipUrlSync": false
       }
     ]
   },

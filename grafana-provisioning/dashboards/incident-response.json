@@ -414,13 +414,13 @@
     {
       "id": 7,
       "type": "logs",
-      "title": "장애 로그 스트림 (ERROR / WARN / FATAL)",
+      "title": "로그 스트림",
       "gridPos": { "h": 14, "w": 24, "x": 0, "y": 22 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
           "refId": "A",
-          "expr": "{job=\"logs\",level=~\"ERROR|WARN|FATAL\",server=~\"$server\"} |= \"$search\"",
+          "expr": "{job=\"logs\",level=~\"$level\",server=~\"$server\"} |= \"$search\"",
           "queryType": "range",
           "legendFormat": ""
         }
@@ -458,6 +458,26 @@
         "sort": 1,
         "type": "query",
         "label": "서버"
+      },
+      {
+        "name": "level",
+        "type": "custom",
+        "label": "로그 레벨",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "options": [
+          { "selected": true,  "text": "All",   "value": "$__all" },
+          { "selected": false, "text": "TRACE",  "value": "TRACE"  },
+          { "selected": false, "text": "DEBUG",  "value": "DEBUG"  },
+          { "selected": false, "text": "INFO",   "value": "INFO"   },
+          { "selected": false, "text": "WARN",   "value": "WARN"   },
+          { "selected": false, "text": "ERROR",  "value": "ERROR"  },
+          { "selected": false, "text": "FATAL",  "value": "FATAL"  }
+        ],
+        "query": "TRACE,DEBUG,INFO,WARN,ERROR,FATAL",
+        "skipUrlSync": false
       },
       {
         "name": "search",

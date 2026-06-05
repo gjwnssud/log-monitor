@@ -1,0 +1,92 @@
+{
+  "title": "로그 탐색",
+  "uid": "log-explorer",
+  "id": null,
+  "refresh": "",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "links": [],
+  "annotations": { "list": [] },
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({job=\"logs\"}, server)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "server",
+        "options": [],
+        "query": "label_values({job=\"logs\"}, server)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query",
+        "label": "서버"
+      },
+      {
+        "name": "level",
+        "type": "custom",
+        "label": "로그 레벨",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "options": [
+          { "selected": true,  "text": "All",   "value": "$__all" },
+          { "selected": false, "text": "TRACE",  "value": "TRACE"  },
+          { "selected": false, "text": "DEBUG",  "value": "DEBUG"  },
+          { "selected": false, "text": "INFO",   "value": "INFO"   },
+          { "selected": false, "text": "WARN",   "value": "WARN"   },
+          { "selected": false, "text": "ERROR",  "value": "ERROR"  },
+          { "selected": false, "text": "FATAL",  "value": "FATAL"  }
+        ],
+        "query": "TRACE,DEBUG,INFO,WARN,ERROR,FATAL",
+        "skipUrlSync": false
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "label": "로그 검색",
+        "description": "특정 텍스트를 포함한 라인만 표시 (비워두면 전체 표시)",
+        "hide": 0,
+        "current": { "value": "" },
+        "query": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "logs",
+      "title": "로그 탐색",
+      "gridPos": { "h": 24, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"logs\",level=~\"$level\",server=~\"$server\"} |= \"$search\"",
+          "queryType": "range",
+          "maxLines": 2000,
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showLabels": true,
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "liveNow": false
+      },
+      "fieldConfig": { "defaults": {}, "overrides": [] }
+    }
+  ]
+}

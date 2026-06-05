@@ -4,6 +4,8 @@ servers.conf
 
 # setup.sh가 생성하는 파일
 alloy-config.alloy
+start-alloy.sh
+start-alloy.bat
 
 # 데이터 볼륨
 data/

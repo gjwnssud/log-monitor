@@ -18,6 +18,14 @@ Grafana (시각화) → http://localhost:3000
   └─ 장애 대응 대시보드 자동 로드
 ```
 
+### OS별 Alloy 실행 방식
+
+| OS | Alloy 실행 | 이유 |
+|----|-----------|------|
+| **Linux** | Docker 컨테이너 | inotify 정상 작동 |
+| **macOS** | 호스트 직접 실행 | Docker Desktop(VirtioFS/gRPC FUSE)에서 파일 이벤트가 컨테이너로 전달되지 않아 실시간 수집 불가 |
+| **Windows** | 호스트 직접 실행 | Docker Desktop(WSL2)에서 9P 브릿지 경유 시 동일 문제 발생 |
+
 ## 기술 스택
 
 | 역할 | 기술 |
@@ -33,10 +41,12 @@ Grafana (시각화) → http://localhost:3000
 - Docker Desktop
 - 원격 서버 SSH 접근 권한 (`~/.ssh/config` 설정 권장)
 - 원격 서버가 `systemd` 기반일 것 (journalctl 사용)
+- **macOS**: Alloy (`brew install grafana/grafana/alloy`)
+- **Windows**: Alloy (`winget install Grafana.Alloy`)
 
 ---
 
-## 사용법 — macOS / Linux
+## 사용법 — macOS
 
 ### 1. 설정 파일 준비
 
@@ -61,18 +71,54 @@ cp .env.example .env
   3) 파일 직접 읽기     (서버에 Alloy 설치, 파일 경로 지정)
 ```
 
-### 3. 컨테이너 실행
+SSH 스트리밍(1번) 선택 시 `start-alloy.sh`가 자동 생성됩니다.
+
+### 3. Alloy 설치 (최초 1회)
 
 ```bash
-docker compose up -d
+brew install grafana/grafana/alloy
 ```
 
-### 4. SSH 로그 스트리밍 시작
+### 4. 서비스 시작
+
+터미널 3개를 사용합니다:
 
 ```bash
+# 터미널 1 — Docker (Loki + Grafana)
+docker compose up -d
+
+# 터미널 2 — Alloy (로그 수집)
+./start-alloy.sh
+
+# 터미널 3 — SSH 로그 스트리밍
 ./stream-logs.sh
-# 백그라운드 실행
-./stream-logs.sh &
+```
+
+---
+
+## 사용법 — Linux
+
+### 1. 설정 파일 준비
+
+```bash
+cp servers.conf.example servers.conf
+cp .env.example .env
+```
+
+### 2. 초기화
+
+```bash
+./setup.sh
+```
+
+### 3. 서비스 시작
+
+```bash
+# Docker (Loki + Grafana + Alloy)
+docker compose -f docker-compose.yml -f docker-compose.alloy.yml up -d
+
+# SSH 로그 스트리밍
+./stream-logs.sh
 ```
 
 ---
@@ -94,24 +140,26 @@ copy .env.example .env
 setup.bat
 ```
 
-실행 시 수집 방식을 선택합니다:
+SSH 스트리밍(1번) 선택 시 `start-alloy.bat`이 자동 생성됩니다.
 
-```
-[setup] Alloy 수집 방식을 선택하세요:
-  1) SSH 스트리밍       (서버 설치 권한 없음, stream-logs.bat 사용)
-  2) Journal 직접 읽기  (서버에 Alloy 설치, systemd 서비스 로그)
-  3) 파일 직접 읽기     (서버에 Alloy 설치, 파일 경로 지정)
-```
-
-### 3. 컨테이너 실행
+### 3. Alloy 설치 (최초 1회)
 
 ```bat
+winget install Grafana.Alloy
+```
+
+### 4. 서비스 시작
+
+터미널 3개를 사용합니다:
+
+```bat
+:: 터미널 1 — Docker (Loki + Grafana)
 docker compose up -d
-```
 
-### 4. SSH 로그 스트리밍 시작
+:: 터미널 2 — Alloy (로그 수집)
+start-alloy.bat
 
-```bat
+:: 터미널 3 — SSH 로그 스트리밍
 stream-logs.bat
 ```
 
@@ -223,7 +271,7 @@ Alloy 설정의 `loki.process "log4j2"` 블록에서 두 가지를 조정합니�
 | `[%p]` (기본값) | `[ERROR]` | `` `\[(?P<level>TRACE\|DEBUG\|INFO\|WARN\|ERROR\|FATAL)\]` `` |
 | `%-5level` | `ERROR ` | `` `\b(?P<level>TRACE\|DEBUG\|INFO\|WARN\|ERROR\|FATAL)\b` `` |
 
-수정 대상 파일: `alloy-config.template.alloy`, `alloy-config-file.template.alloy`, `alloy-config-journal.template.alloy`
+수정 대상 파일: `alloy-config.host.template.alloy`, `alloy-config.template.alloy`, `alloy-config-file.template.alloy`, `alloy-config-journal.template.alloy`
 
 ---
 
@@ -231,10 +279,19 @@ Alloy 설정의 `loki.process "log4j2"` 블록에서 두 가지를 조정합니�
 
 기존에 수집된 로그를 지우고 처음부터 다시 수집하려면:
 
+**macOS / Windows:**
 ```bash
 docker compose down
 rm -rf data/loki data/alloy data/grafana
 docker compose up -d
+./start-alloy.sh   # macOS
+```
+
+**Linux:**
+```bash
+docker compose -f docker-compose.yml -f docker-compose.alloy.yml down
+rm -rf data/loki data/alloy data/grafana
+docker compose -f docker-compose.yml -f docker-compose.alloy.yml up -d
 ```
 
 > `data/logs/`는 원본 로그 파일이므로 삭제하지 않습니다.
@@ -245,28 +302,36 @@ docker compose up -d
 
 ```
 log-monitor/
-├── .env.example                  # 포트·리소스 설정 예시
-├── servers.conf.example          # 서버 목록 예시
-├── docker-compose.yml            # 컨테이너 구성
-├── alloy-config.template.alloy          # Alloy 설정 템플릿 (SSH 스트리밍 방식)
-├── alloy-config-journal.template.alloy  # Alloy 설정 템플릿 (서버 설치 - systemd journal)
-├── alloy-config-file.template.alloy     # Alloy 설정 템플릿 (서버 설치 - 파일 직접 읽기)
-├── setup.sh                      # 초기화 스크립트 (macOS/Linux)
-├── setup.bat                     # 초기화 스크립트 (Windows)
-├── stream-logs.sh                # SSH 스트리밍 + 로테이션 (macOS/Linux)
-├── stream-logs.bat               # SSH 스트리밍 진입점 (Windows)
-├── stream-logs.ps1               # SSH 스트리밍 + 로테이션 (Windows PowerShell)
-├── grafana-provisioning/         # Grafana 프로비저닝 설정
+├── .env.example                         # 포트·리소스 설정 예시
+├── servers.conf.example                 # 서버 목록 예시
+├── docker-compose.yml                   # Loki + Grafana (전 OS 공통)
+├── docker-compose.alloy.yml             # Alloy 컨테이너 (Linux 전용)
+├── alloy-config.host.template.alloy     # Alloy 설정 템플릿 — macOS/Windows 호스트용
+├── alloy-config.template.alloy          # Alloy 설정 템플릿 — Linux Docker용
+├── alloy-config-journal.template.alloy  # Alloy 설정 템플릿 — 서버 설치 (systemd journal)
+├── alloy-config-file.template.alloy     # Alloy 설정 템플릿 — 서버 설치 (파일 직접 읽기)
+├── setup.sh                             # 초기화 스크립트 (macOS/Linux)
+├── setup.bat                            # 초기화 스크립트 (Windows)
+├── stream-logs.sh                       # SSH 스트리밍 + 로테이션 (macOS/Linux)
+├── stream-logs.bat                      # SSH 스트리밍 진입점 (Windows)
+├── stream-logs.ps1                      # SSH 스트리밍 + 로테이션 (Windows PowerShell)
+├── loki-config.yml                      # Loki 설정 (flush 주기 등)
+├── grafana-provisioning/                # Grafana 프로비저닝 설정
 │   ├── datasources/
-│   │   └── loki.yml              # Loki 데이터소스 자동 등록
+│   │   └── loki.yml                     # Loki 데이터소스 자동 등록
 │   └── dashboards/
-│       ├── dashboards.yml        # 대시보드 파일 경로 등록
-│       └── incident-response.json  # Spring Boot 장애 대응 대시보드
-└── data/                         # 볼륨 데이터 (gitignore)
+│       ├── dashboards.yml               # 대시보드 파일 경로 등록
+│       └── incident-response.json       # Spring Boot 장애 대응 대시보드
+└── data/                                # 볼륨 데이터 (gitignore)
     ├── loki/
     ├── grafana/
     ├── alloy/
     └── logs/
+
+# setup.sh / setup.bat 실행 후 생성되는 파일 (gitignore)
+# alloy-config.alloy    — 생성된 Alloy 설정
+# start-alloy.sh        — macOS Alloy 실행 스크립트
+# start-alloy.bat       — Windows Alloy 실행 스크립트
 ```
 
 ---

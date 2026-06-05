@@ -3,6 +3,11 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+IS_MACOS=false
+if [[ "$(uname)" == "Darwin" ]]; then
+  IS_MACOS=true
+fi
+
 # .env 확인
 if [ ! -f "$SCRIPT_DIR/.env" ]; then
   cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
@@ -39,27 +44,70 @@ OUTPUT="$SCRIPT_DIR/alloy-config.alloy"
 case "$CHOICE" in
   1)
     check_servers_conf
-    TEMPLATE="$SCRIPT_DIR/alloy-config.template.alloy"
+
+    if $IS_MACOS; then
+      TEMPLATE="$SCRIPT_DIR/alloy-config.host.template.alloy"
+    else
+      TEMPLATE="$SCRIPT_DIR/alloy-config.template.alloy"
+    fi
 
     cp "$TEMPLATE" "$OUTPUT"
+
+    if $IS_MACOS; then
+      LOG_DIR="$SCRIPT_DIR/data/logs"
+    else
+      LOG_DIR="/logs"
+    fi
 
     TEMP_FILE=$(mktemp)
     while IFS= read -r line || [ -n "$line" ]; do
       [[ -z "$line" || "$line" =~ ^# ]] && continue
       read -r alias ssh_host service <<< "$line"
-      echo "    {__path__ = \"/logs/${alias}.log\", job = \"logs\", server = \"${alias}\"}," >> "$TEMP_FILE"
+      echo "    {__path__ = \"${LOG_DIR}/${alias}.log\", job = \"logs\", server = \"${alias}\"}," >> "$TEMP_FILE"
     done < "$SCRIPT_DIR/servers.conf"
 
     sed -i.bak "s|// __SERVERS__|$(sed 's/[\/&]/\\&/g' "$TEMP_FILE" | tr '\n' '§' | sed 's/§/\\n/g')|" "$OUTPUT"
     rm -f "$TEMP_FILE" "${OUTPUT}.bak"
 
     echo "[setup] alloy-config.alloy 생성 완료 (SSH 스트리밍)"
-    echo ""
-    echo "다음 단계:"
-    echo "  1. docker compose up -d"
-    echo "  2. ./stream-logs.sh"
-    echo "  3. 브라우저에서 http://localhost:3000 접속 (Grafana)"
-    echo "  4. 브라우저에서 http://localhost:12345 접속 (Alloy UI)"
+
+    if $IS_MACOS; then
+      START_ALLOY="$SCRIPT_DIR/start-alloy.sh"
+      cat > "$START_ALLOY" <<EOF
+#!/usr/bin/env bash
+set -e
+SCRIPT_DIR="\$(cd "\$(dirname "\$0")" && pwd)"
+exec alloy run --storage.path "\$SCRIPT_DIR/data/alloy" "\$SCRIPT_DIR/alloy-config.alloy"
+EOF
+      chmod +x "$START_ALLOY"
+      echo "[setup] start-alloy.sh 생성 완료"
+      echo ""
+      echo "[macOS] Alloy를 호스트에서 직접 실행합니다 (Docker 파일 감시 한계 우회)"
+      echo ""
+      echo "다음 단계:"
+      echo "  1. Alloy 설치 (최초 1회):"
+      echo "     brew install grafana/grafana/alloy"
+      echo ""
+      echo "  2. Docker 서비스 시작 (Loki + Grafana):"
+      echo "     docker compose up -d"
+      echo ""
+      echo "  3. Alloy 실행 (새 터미널에서):"
+      echo "     ./start-alloy.sh"
+      echo ""
+      echo "  4. 로그 스트리밍 시작 (또 다른 터미널에서):"
+      echo "     ./stream-logs.sh"
+      echo ""
+      echo "  5. 브라우저 접속:"
+      echo "     Grafana: http://localhost:3000"
+      echo "     Alloy:   http://localhost:12345"
+    else
+      echo ""
+      echo "다음 단계:"
+      echo "  1. docker compose -f docker-compose.yml -f docker-compose.alloy.yml up -d"
+      echo "  2. ./stream-logs.sh"
+      echo "  3. 브라우저에서 http://localhost:3000 접속 (Grafana)"
+      echo "  4. 브라우저에서 http://localhost:12345 접속 (Alloy UI)"
+    fi
     ;;
   2)
     cp "$SCRIPT_DIR/alloy-config-journal.template.alloy" "$OUTPUT"

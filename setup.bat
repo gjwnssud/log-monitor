@@ -41,17 +41,21 @@ if not exist "%SCRIPT_DIR%\servers.conf" (
     exit /b 1
 )
 
-:: alloy-config.alloy 생성 (임시 PowerShell 스크립트 사용)
+:: alloy-config.alloy 생성 (Windows 호스트 경로 사용)
 set PS_TEMP=%TEMP%\generate_alloy_%RANDOM%.ps1
+set LOG_DIR=%SCRIPT_DIR%\data\logs
+set LOG_DIR_FWD=%LOG_DIR:\=/%
+
 (
     echo $scriptDir = '%SCRIPT_DIR:\=\\%'
-    echo $template = Get-Content "$scriptDir\alloy-config.template.alloy"
+    echo $template = Get-Content "$scriptDir\alloy-config.host.template.alloy"
     echo $servers = Get-Content "$scriptDir\servers.conf" ^| Where-Object { $_ -notmatch '^\s*#' -and $_.Trim^(^) -ne '' }
+    echo $logDir = '%LOG_DIR_FWD%'
     echo $entries = @^(^)
     echo foreach ^($line in $servers^) {
     echo     $parts = $line -split '\s+'
     echo     $alias = $parts[0]
-    echo     $entries += "    {__path__ = ``""/logs/$alias.log``"", job = ``""logs``"", server = ``""$alias``""},"
+    echo     $entries += "    {__path__ = ``""$logDir/$alias.log``"", job = ``""logs``"", server = ``""$alias``""},"
     echo }
     echo $out = @^(^)
     echo foreach ^($line in $template^) {
@@ -64,12 +68,35 @@ powershell -ExecutionPolicy Bypass -File "%PS_TEMP%"
 del "%PS_TEMP%"
 
 echo [setup] alloy-config.alloy 생성 완료 (SSH 스트리밍)
+
+:: start-alloy.bat 생성
+(
+    echo @echo off
+    echo set SCRIPT_DIR=%%~dp0
+    echo set SCRIPT_DIR=%%SCRIPT_DIR:~0,-1%%
+    echo alloy run --storage.path "%%SCRIPT_DIR%%\data\alloy" "%%SCRIPT_DIR%%\alloy-config.alloy"
+) > "%SCRIPT_DIR%\start-alloy.bat"
+
+echo [setup] start-alloy.bat 생성 완료
+echo.
+echo [Windows] Alloy를 호스트에서 직접 실행합니다 (Docker 파일 감시 한계 우회)
 echo.
 echo 다음 단계:
-echo   1. docker compose up -d
-echo   2. stream-logs.bat
-echo   3. 브라우저에서 http://localhost:3000 접속 (Grafana)
-echo   4. 브라우저에서 http://localhost:12345 접속 (Alloy UI)
+echo   1. Alloy 설치 (최초 1회):
+echo      winget install Grafana.Alloy
+echo.
+echo   2. Docker 서비스 시작 (Loki + Grafana):
+echo      docker compose up -d
+echo.
+echo   3. Alloy 실행 (새 터미널에서):
+echo      start-alloy.bat
+echo.
+echo   4. 로그 스트리밍 시작 (또 다른 터미널에서):
+echo      stream-logs.bat
+echo.
+echo   5. 브라우저 접속:
+echo      Grafana: http://localhost:3000
+echo      Alloy:   http://localhost:12345
 goto :end
 
 :journal

@@ -39,25 +39,3 @@ services:
     depends_on:
       - loki
     restart: unless-stopped
-
-  alloy:
-    image: grafana/alloy:latest
-    container_name: alloy
-    volumes:
-      - ./alloy-config.alloy:/etc/alloy/config.alloy
-      - ./data/logs:/logs
-      - ./data/alloy:/data-alloy
-    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
-    ports:
-      - "12345:12345"
-    deploy:
-      resources:
-        limits:
-          cpus: "${ALLOY_CPU_LIMIT:-0.5}"
-          memory: "${ALLOY_MEM_LIMIT:-256M}"
-        reservations:
-          cpus: "${ALLOY_CPU_RESERVE:-0.1}"
-          memory: "${ALLOY_MEM_RESERVE:-128M}"
-    depends_on:
-      - loki
-    restart: unless-stopped

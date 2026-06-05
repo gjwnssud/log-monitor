@@ -638,7 +638,7 @@
     {
       "id": 10,
       "type": "row",
-      "title": "📋 로그 뷰어",
+      "title": "📋 실시간 로그",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -651,12 +651,12 @@
     {
       "id": 7,
       "type": "logs",
-      "title": "최신 로그 (10s 자동 갱신)",
+      "title": "로그 스트림",
       "gridPos": {
-        "h": 16,
+        "h": 14,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 22
       },
       "datasource": {
         "type": "loki",
@@ -686,7 +686,7 @@
       }
     }
   ],
-  "refresh": "10s",
+  "refresh": "",
   "schemaVersion": 38,
   "tags": [
     "spring-boot",

@@ -651,7 +651,7 @@
     {
       "id": 7,
       "type": "logs",
-      "title": "실시간 스트림 (Live)",
+      "title": "최신 로그 (10s 자동 갱신)",
       "gridPos": {
         "h": 16,
         "w": 12,
@@ -678,7 +678,7 @@
         "dedupStrategy": "none",
         "enableLogDetails": true,
         "prettifyLogMessage": false,
-        "liveNow": true
+        "liveNow": false
       },
       "fieldConfig": {
         "defaults": {},
@@ -724,7 +724,7 @@
       }
     }
   ],
-  "refresh": "",
+  "refresh": "10s",
   "schemaVersion": 38,
   "tags": [
     "spring-boot",

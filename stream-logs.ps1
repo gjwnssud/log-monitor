@@ -1,7 +1,8 @@
-# 로그 로테이션 설정
-$MaxSizeMB     = 50   # 로테이션 기준 파일 크기 (MB)
-$RotateKeep    = 5    # 보관할 로테이션 파일 개수
-$CheckInterval = 30   # 크기 체크 주기 (초)
+$MaxSizeMB              = 50
+$RotateKeep             = 5
+$RotationCheckInterval  = 30
+$ReconnectCheckInterval = 5
+$ReconnectDelay         = 5
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LogDir      = Join-Path $ScriptDir "data\logs"
@@ -12,7 +13,6 @@ if (-not (Test-Path $ServersConf)) {
     exit 1
 }
 
-# servers.conf 파싱
 $servers = @()
 Get-Content $ServersConf | ForEach-Object {
     $line = $_.Trim()
@@ -22,15 +22,14 @@ Get-Content $ServersConf | ForEach-Object {
     }
 }
 
-$processes = @()
-
-function Stop-All {
-    Write-Host ""
-    Write-Host "[stream] 스트리밍 종료 중..."
-    foreach ($p in $processes) {
-        if (-not $p.HasExited) { $p.Kill() }
-    }
-    Write-Host "[stream] 종료 완료"
+function New-SSHProcess {
+    param($sshHost, $service, $logFile)
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName  = "cmd.exe"
+    $psi.Arguments = "/c ssh -o `"ServerAliveInterval=10`" -o `"ServerAliveCountMax=3`" -o `"ConnectTimeout=10`" $sshHost `"journalctl -u $service -f --output=short-iso`" >> `"$logFile`""
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow  = $true
+    return [System.Diagnostics.Process]::Start($psi)
 }
 
 function Rotate-Log {
@@ -45,35 +44,59 @@ function Rotate-Log {
     Write-Host "[rotate] $(Split-Path -Leaf $file) rotated"
 }
 
+function Stop-All {
+    Write-Host ""
+    Write-Host "[stream] 스트리밍 종료 중..."
+    foreach ($s in $script:streamers) {
+        if (-not $s.process.HasExited) { $s.process.Kill() }
+    }
+    Write-Host "[stream] 종료 완료"
+}
+
+$streamers = [System.Collections.ArrayList]@()
+
 Write-Host "[stream] SSH 로그 스트리밍 시작"
 Write-Host ""
 
 foreach ($server in $servers) {
     $logFile = Join-Path $LogDir "$($server.alias).log"
     Write-Host "[stream] $($server.alias) -> $($server.sshHost) ($($server.service))"
-
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName  = "cmd.exe"
-    $psi.Arguments = "/c ssh $($server.sshHost) `"journalctl -u $($server.service) -f --output=short-iso`" >> `"$logFile`""
-    $psi.UseShellExecute  = $false
-    $psi.CreateNoWindow   = $true
-
-    $p = [System.Diagnostics.Process]::Start($psi)
-    $processes += $p
+    $p = New-SSHProcess $server.sshHost $server.service $logFile
+    [void]$streamers.Add([PSCustomObject]@{ server = $server; process = $p; logFile = $logFile })
 }
 
 Write-Host ""
 Write-Host "[stream] 스트리밍 중... (종료: Ctrl+C)"
-Write-Host "[rotate] 로테이션 기준: ${MaxSizeMB}MB, 보관: ${RotateKeep}개, 체크 주기: ${CheckInterval}초"
+Write-Host "[rotate] 로테이션 기준: ${MaxSizeMB}MB, 보관: ${RotateKeep}개, 체크 주기: ${RotationCheckInterval}초"
+Write-Host "[reconnect] 재연결 감지 주기: ${ReconnectCheckInterval}초, 재연결 대기: ${ReconnectDelay}초"
+
+$lastRotationCheck = Get-Date
 
 try {
     while ($true) {
-        Start-Sleep $CheckInterval
-        foreach ($server in $servers) {
-            $logFile = Join-Path $LogDir "$($server.alias).log"
-            if (Test-Path $logFile) {
-                $sizeMB = (Get-Item $logFile).Length / 1MB
-                if ($sizeMB -ge $MaxSizeMB) { Rotate-Log $logFile }
+        Start-Sleep $ReconnectCheckInterval
+
+        # 재연결 체크
+        for ($i = 0; $i -lt $streamers.Count; $i++) {
+            $s = $streamers[$i]
+            if ($s.process.HasExited) {
+                Write-Host "[stream] $($s.server.alias) 연결 끊김. ${ReconnectDelay}초 후 재연결..."
+                Start-Sleep $ReconnectDelay
+                $newProcess = New-SSHProcess $s.server.sshHost $s.server.service $s.logFile
+                $streamers[$i] = [PSCustomObject]@{ server = $s.server; process = $newProcess; logFile = $s.logFile }
+                Write-Host "[stream] $($s.server.alias) 재연결 완료"
+            }
+        }
+
+        # 로테이션 체크
+        $now = Get-Date
+        if (($now - $lastRotationCheck).TotalSeconds -ge $RotationCheckInterval) {
+            $lastRotationCheck = $now
+            foreach ($s in $streamers) {
+                if (Test-Path $s.logFile) {
+                    $sizeMB = (Get-Item $s.logFile).Length / 1MB
+                    if ($sizeMB -ge $MaxSizeMB) { Rotate-Log $s.logFile }
+                }
             }
         }
     }

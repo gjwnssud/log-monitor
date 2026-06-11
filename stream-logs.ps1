@@ -55,6 +55,9 @@ function Stop-All {
 
 $streamers = [System.Collections.ArrayList]@()
 
+# 터미널 강제 종료 시에도 자식 프로세스 정리
+Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Stop-All } | Out-Null
+
 Write-Host "[stream] SSH 로그 스트리밍 시작"
 Write-Host ""
 

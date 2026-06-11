@@ -24,7 +24,7 @@ cleanup() {
   wait 2>/dev/null || true
   echo "[stream] 종료 완료"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT INT TERM HUP
 
 file_size_mb() {
   local file="$1"

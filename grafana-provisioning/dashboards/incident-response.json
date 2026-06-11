@@ -790,7 +790,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Spring Boot 장애 대응",
+  "title": "로그 모니터링",
   "uid": "spring-boot-incident",
   "version": 1,
   "weekStart": ""

@@ -38,14 +38,17 @@
     {
       "id": 12,
       "type": "stat",
-      "title": "서버 연결 상태",
-      "description": "최근 2분간 로그 수신 여부로 SSH 스트리밍 연결 상태를 표시합니다. 패널에 표시되지 않는 서버는 연결이 끊겼을 수 있습니다.",
+      "title": "$server",
+      "description": "최근 2분간 로그 미수신 시 끊김으로 표시됩니다. ($server 변수 기준으로 서버별 반복 생성)",
       "gridPos": {
         "h": 4,
-        "w": 24,
+        "w": 6,
         "x": 0,
         "y": 1
       },
+      "repeat": "server",
+      "repeatDirection": "h",
+      "maxPerRow": 6,
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -53,9 +56,9 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (server) (count_over_time({job=\"logs\"}[2m]))",
+          "expr": "absent_over_time({job=\"logs\", server=\"$server\"}[2m])",
           "queryType": "instant",
-          "legendFormat": "{{server}}"
+          "legendFormat": ""
         }
       ],
       "options": {
@@ -66,7 +69,7 @@
           "fields": "",
           "values": false
         },
-        "orientation": "horizontal",
+        "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background",
         "graphMode": "none",
@@ -81,30 +84,28 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "green",
+                "color": "red",
                 "value": 1
               }
             ]
           },
           "mappings": [
             {
-              "type": "range",
+              "type": "value",
               "options": {
-                "from": 1,
-                "to": 10000000,
-                "result": {
-                  "text": "연결됨",
-                  "color": "green",
+                "1": {
+                  "text": "끊김",
+                  "color": "red",
                   "index": 0
                 }
               }
             }
           ],
-          "noValue": "끊김"
+          "noValue": "연결됨"
         },
         "overrides": []
       }

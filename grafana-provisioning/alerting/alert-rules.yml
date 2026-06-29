@@ -1,0 +1,118 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: 로그 알림
+    folder: 알림
+    interval: 1m
+    rules:
+
+      # FATAL 로그 발생 시 즉시 알림
+      - uid: fatal-log-alert
+        title: "[긴급] FATAL 로그 발생"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'sum(count_over_time({job="logs",level="FATAL"}[5m]))'
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              datasource:
+                uid: __expr__
+                type: __expr__
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  query:
+                    params: [B]
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                uid: __expr__
+                type: __expr__
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "FATAL 로그 감지"
+          description: "최근 5분간 FATAL 로그가 발생했습니다."
+        labels:
+          severity: critical
+        isPaused: false
+
+      # ERROR 5분간 10건 이상 급증 시 알림
+      - uid: error-surge-alert
+        title: "[경고] ERROR 급증"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: loki
+            model:
+              expr: 'sum(count_over_time({job="logs",level="ERROR"}[5m]))'
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              datasource:
+                uid: __expr__
+                type: __expr__
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [10]
+                  operator:
+                    type: and
+                  query:
+                    params: [B]
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                uid: __expr__
+                type: __expr__
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: "ERROR 급증 감지"
+          description: "최근 5분간 ERROR 10건 이상 발생했습니다."
+        labels:
+          severity: warning
+        isPaused: false

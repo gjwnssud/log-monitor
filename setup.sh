@@ -130,3 +130,27 @@ EOF
     exit 1
     ;;
 esac
+
+# Grafana alerting contact-points.yml 생성
+generate_contact_points() {
+  local template="$SCRIPT_DIR/grafana-provisioning/alerting/contact-points.yml.template"
+  local output="$SCRIPT_DIR/grafana-provisioning/alerting/contact-points.yml"
+
+  local bot_token chat_id
+  bot_token=$(grep '^TELEGRAM_BOT_TOKEN=' "$SCRIPT_DIR/.env" | cut -d'=' -f2-)
+  chat_id=$(grep '^TELEGRAM_CHAT_ID=' "$SCRIPT_DIR/.env" | cut -d'=' -f2-)
+
+  if [ -z "$bot_token" ] || [ -z "$chat_id" ]; then
+    echo "[setup] .env에 TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID 미설정 → contact-points.yml 생성 건너뜀"
+    echo "        Telegram 알림을 사용하려면 .env에 값을 설정 후 setup.sh을 다시 실행하세요."
+    return
+  fi
+
+  sed -e "s|__TELEGRAM_BOT_TOKEN__|${bot_token}|g" \
+      -e "s|__TELEGRAM_CHAT_ID__|${chat_id}|g" \
+      "$template" > "$output"
+
+  echo "[setup] grafana-provisioning/alerting/contact-points.yml 생성 완료"
+}
+
+generate_contact_points

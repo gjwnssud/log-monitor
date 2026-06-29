@@ -23,6 +23,93 @@
   "links": [],
   "panels": [
     {
+      "id": 11,
+      "type": "row",
+      "title": "🖥️ 서버 연결 상태",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "서버 연결 상태",
+      "description": "최근 2분간 로그 수신 여부로 SSH 스트리밍 연결 상태를 표시합니다. 패널에 표시되지 않는 서버는 연결이 끊겼을 수 있습니다.",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (server) (count_over_time({job=\"logs\"}[2m]))",
+          "queryType": "instant",
+          "legendFormat": "{{server}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 1,
+                "to": 10000000,
+                "result": {
+                  "text": "연결됨",
+                  "color": "green",
+                  "index": 0
+                }
+              }
+            }
+          ],
+          "noValue": "끊김"
+        },
+        "overrides": []
+      }
+    },
+    {
       "id": 9,
       "type": "row",
       "title": "🚨 에러 통계",
@@ -30,7 +117,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 5
       },
       "collapsed": false,
       "panels": []
@@ -44,7 +131,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 6
       },
       "datasource": {
         "type": "loki",
@@ -106,7 +193,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 6
       },
       "datasource": {
         "type": "loki",
@@ -168,7 +255,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 6
       },
       "datasource": {
         "type": "loki",
@@ -230,7 +317,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 6
       },
       "datasource": {
         "type": "loki",
@@ -296,7 +383,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 5
+        "y": 10
       },
       "datasource": {
         "type": "loki",
@@ -413,7 +500,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 10
       },
       "datasource": {
         "type": "loki",
@@ -473,7 +560,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 18
       },
       "datasource": {
         "type": "loki",
@@ -643,7 +730,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 26
       },
       "collapsed": false,
       "panels": []
@@ -656,7 +743,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 27
       },
       "datasource": {
         "type": "loki",

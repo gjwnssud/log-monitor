@@ -4,8 +4,9 @@ set -e
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPTS_DIR/.." && pwd)"
 METRICS_DIR="$ROOT/data/metrics"
-INTERVAL=30
+INTERVAL=30        # 수집 주기(초) — prometheus.yml scrape_interval 과 맞출 것
 RECONNECT_DELAY=5
+ROTATE_KEEP=3      # .prom 백업 보관 수
 PIDS=()
 
 mkdir -p "$METRICS_DIR"
@@ -146,29 +147,46 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM HUP
 
+rotate_prom() {
+    local file="$1"
+    [ -f "$file" ] || return 0
+    for i in $(seq $((ROTATE_KEEP - 1)) -1 1); do
+        [ -f "${file}.${i}" ] && mv "${file}.${i}" "${file}.$((i + 1))"
+    done
+    cp "$file" "${file}.1"
+}
+
 collect_server() {
     local alias="$1"
     local ssh_host="$2"
     local out_file="$METRICS_DIR/${alias}.prom"
     local cache_file="$METRICS_DIR/.cpu_${alias}.cache"
+    local tmp_file="${out_file}.tmp"
+
+    trap 'exit 0' TERM INT
 
     echo "[metrics] $alias ($ssh_host): 수집 시작"
 
     while true; do
         raw=$(ssh \
-            -o ConnectTimeout=5 \
+            -o ConnectTimeout=10 \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=3 \
             "$ssh_host" \
             "cat /proc/stat /proc/meminfo /proc/net/dev && printf '\n___SEP___\n' && df -P 2>/dev/null" \
-            2>/dev/null) \
-            && echo "$raw" | python3 "$PARSER" "$alias" "$cache_file" > "$out_file" \
-            || {
-                echo "[metrics] $alias: SSH 연결 실패, ${RECONNECT_DELAY}초 후 재시도..."
-                > "$out_file"
-                sleep "$RECONNECT_DELAY"
-                continue
-            }
+            2>/dev/null)
+
+        if [ -n "$raw" ] && echo "$raw" | python3 "$PARSER" "$alias" "$cache_file" > "$tmp_file" 2>/dev/null; then
+            rotate_prom "$out_file"
+            mv "$tmp_file" "$out_file"
+        else
+            rm -f "$tmp_file"
+            echo "[metrics] $alias: 수집 실패, 이전 데이터 유지. ${RECONNECT_DELAY}초 후 재시도..."
+            sleep "$RECONNECT_DELAY"
+            continue
+        fi
 
         sleep "$INTERVAL"
     done
@@ -187,4 +205,5 @@ while IFS= read -r line || [ -n "$line" ]; do
 done < "$ROOT/servers.conf"
 
 echo "[metrics] 전체 서버 수집 시작. Ctrl+C로 종료."
+echo "[metrics] 수집 주기: ${INTERVAL}초 | 재시도 대기: ${RECONNECT_DELAY}초 | 백업 보관: ${ROTATE_KEEP}개"
 wait

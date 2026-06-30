@@ -4,6 +4,6 @@ policies:
   - orgId: 1
     receiver: telegram
     group_by: ['grafana_folder', 'alertname']
-    group_wait: 30s
-    group_interval: 5m
-    repeat_interval: 1h
+    group_wait: 1m
+    group_interval: 10m
+    repeat_interval: 4h

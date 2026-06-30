@@ -85,6 +85,10 @@ echo [setup] start-alloy.bat 생성 완료
 powershell -ExecutionPolicy Bypass -Command ^
   "$env = Get-Content '%SCRIPT_DIR%\.env'; $t=''; $c=''; foreach($l in $env){ if($l -match '^TELEGRAM_BOT_TOKEN=(.+)'){$t=$matches[1]} if($l -match '^TELEGRAM_CHAT_ID=(.+)'){$c=$matches[1]} }; if($t -and $c){ $tmpl = Get-Content '%SCRIPT_DIR%\config\grafana\provisioning\alerting\contact-points.yml.template' -Raw; ($tmpl -replace '__TELEGRAM_BOT_TOKEN__',$t -replace '__TELEGRAM_CHAT_ID__',$c) | Set-Content '%SCRIPT_DIR%\config\grafana\provisioning\alerting\contact-points.yml' -Encoding UTF8 -NoNewline; Write-Host '[setup] config\grafana\provisioning\alerting\contact-points.yml 생성 완료' } else { Write-Host '[setup] .env에 TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID 미설정 → contact-points.yml 생성 건너뜀' }"
 
+:: templates.yml 생성
+powershell -ExecutionPolicy Bypass -Command ^
+  "$url = (Get-Content '%SCRIPT_DIR%\.env' | Where-Object { $_ -match '^GRAFANA_EXTERNAL_URL=' } | ForEach-Object { $_ -replace '^GRAFANA_EXTERNAL_URL=','' } | Select-Object -First 1); if (-not $url) { $url = 'http://localhost:3000' }; $tmpl = Get-Content '%SCRIPT_DIR%\config\grafana\provisioning\alerting\templates.yml.template' -Raw; ($tmpl -replace '__GRAFANA_EXTERNAL_URL__',$url) | Set-Content '%SCRIPT_DIR%\config\grafana\provisioning\alerting\templates.yml' -Encoding UTF8 -NoNewline; Write-Host '[setup] config\grafana\provisioning\alerting\templates.yml 생성 완료'"
+
 echo.
 echo [Windows] Alloy를 호스트에서 직접 실행합니다 (Docker 파일 감시 한계 우회)
 echo.

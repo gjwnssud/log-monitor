@@ -12,8 +12,8 @@ loki.source.file "servers" {
   forward_to = [loki.process.log4j2.receiver]
 
   file_watch {
-    min_poll_frequency = "1s"
-    max_poll_frequency = "5s"
+    min_poll_frequency = "250ms"
+    max_poll_frequency = "1s"
   }
 }
 

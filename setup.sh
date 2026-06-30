@@ -164,3 +164,18 @@ generate_contact_points() {
 }
 
 generate_contact_points
+
+# Grafana alerting templates.yml 생성
+generate_notification_templates() {
+  local template="$SCRIPT_DIR/config/grafana/provisioning/alerting/templates.yml.template"
+  local output="$SCRIPT_DIR/config/grafana/provisioning/alerting/templates.yml"
+
+  local grafana_url
+  grafana_url=$(grep '^GRAFANA_EXTERNAL_URL=' "$SCRIPT_DIR/.env" | cut -d'=' -f2-)
+  grafana_url="${grafana_url:-http://localhost:3000}"
+
+  sed "s|__GRAFANA_EXTERNAL_URL__|${grafana_url}|g" "$template" > "$output"
+  echo "[setup] config/grafana/provisioning/alerting/templates.yml 생성 완료"
+}
+
+generate_notification_templates

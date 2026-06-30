@@ -1,0 +1,27 @@
+apiVersion: 1
+
+templates:
+  - orgId: 1
+    name: log_monitor
+    template: |
+      {{ define "log_monitor.telegram" -}}
+      {{- if eq .Status "firing" -}}
+      {{- range .Alerts.Firing }}
+      {{- if eq (index .Labels "severity") "critical" }}
+      🔴 [긴급] {{ index .Labels "alertname" }}
+      {{- else }}
+      🟠 [경고] {{ index .Labels "alertname" }}
+      {{- end }}
+      ━━━━━━━━━━━━━━━━━━━
+      📊 {{ .Annotations.description }}
+      ⏰ 발생: {{ .StartsAt.Local.Format "01/02 15:04" }}
+      {{ end -}}
+      {{- else -}}
+      {{- range .Alerts.Resolved }}
+      ✅ [해소] {{ index .Labels "alertname" }}
+      ━━━━━━━━━━━━━━━━━━━
+      ⏰ {{ .StartsAt.Local.Format "01/02 15:04" }} ~ {{ .EndsAt.Local.Format "15:04" }}
+      {{ end -}}
+      {{- end -}}
+      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident
+      {{- end }}

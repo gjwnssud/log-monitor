@@ -7,9 +7,9 @@ groups:
     interval: 1m
     rules:
 
-      # FATAL 로그 발생 시 즉시 알림
+      # FATAL 로그: 5분간 1건 이상 발생 시, 1분간 지속되면 알림
       - uid: fatal-log-alert
-        title: "[긴급] FATAL 로그 발생"
+        title: "FATAL 로그 발생"
         condition: C
         data:
           - refId: A
@@ -54,16 +54,16 @@ groups:
                 type: __expr__
         noDataState: OK
         execErrState: Error
-        for: 0s
+        for: 1m
         annotations:
-          description: "최근 5분간 FATAL 로그 {{ $values.B }}건 감지됨"
+          description: "FATAL {{ $values.B }}건 감지 (최근 5분)"
         labels:
           severity: critical
         isPaused: false
 
-      # ERROR 5분간 10건 이상 급증 시 알림
+      # ERROR 급증: 5분간 30건 초과 시, 5분간 지속되면 알림
       - uid: error-surge-alert
-        title: "[경고] ERROR 급증"
+        title: "ERROR 급증"
         condition: C
         data:
           - refId: A
@@ -95,7 +95,7 @@ groups:
               conditions:
                 - evaluator:
                     type: gt
-                    params: [10]
+                    params: [30]
                   operator:
                     type: and
                   query:
@@ -108,9 +108,9 @@ groups:
                 type: __expr__
         noDataState: OK
         execErrState: Error
-        for: 2m
+        for: 5m
         annotations:
-          description: "최근 5분 ERROR {{ $values.B }}건 발생 (임계값 10건 초과)"
+          description: "ERROR {{ $values.B }}건 감지 (최근 5분, 임계값 30건 초과)"
         labels:
           severity: warning
         isPaused: false

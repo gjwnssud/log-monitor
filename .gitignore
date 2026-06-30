@@ -2,6 +2,7 @@
 .env
 servers.conf
 config/grafana/provisioning/alerting/contact-points.yml
+config/grafana/provisioning/alerting/templates.yml
 
 # setup.sh가 생성하는 파일
 config/alloy/alloy-config.alloy

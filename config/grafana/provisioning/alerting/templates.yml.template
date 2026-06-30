@@ -18,7 +18,7 @@ templates:
       {{ end -}}
       {{- else -}}
       {{- range .Alerts.Resolved }}
-      ✅ [해소] {{ index .Labels "alertname" }}
+      ✅ [알림 해제] {{ index .Labels "alertname" }}
       ━━━━━━━━━━━━━━━━━━━
       ⏰ {{ .StartsAt.Local.Format "01/02 15:04" }} ~ {{ .EndsAt.Local.Format "15:04" }}
       {{ end -}}

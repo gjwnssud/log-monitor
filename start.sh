@@ -5,9 +5,9 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 export ROOT
 
 DC="docker compose --project-directory $ROOT"
-CORE="-f $ROOT/modules/core/docker-compose.yml"
-ALLOY="-f $ROOT/modules/alloy/docker-compose.yml"
-METRICS="-f $ROOT/modules/metrics/docker-compose.yml"
+CORE="-f $ROOT/docker/core/docker-compose.yml"
+ALLOY="-f $ROOT/docker/alloy/docker-compose.yml"
+METRICS="-f $ROOT/docker/metrics/docker-compose.yml"
 
 CMD="${1:-up}"
 

@@ -8,5 +8,8 @@ config/alloy/alloy-config.alloy
 start-alloy.sh
 start-alloy.bat
 
+# ~/.gitignore_global에 docker가 있는 경우 이 프로젝트에서 제외
+!docker/
+
 # 데이터 볼륨
 data/

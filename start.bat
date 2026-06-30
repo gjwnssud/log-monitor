@@ -7,9 +7,9 @@ set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 set ROOT=%SCRIPT_DIR%
 
 set DC=docker compose --project-directory "%ROOT%"
-set CORE=-f "%ROOT%\modules\core\docker-compose.yml"
-set ALLOY=-f "%ROOT%\modules\alloy\docker-compose.yml"
-set METRICS=-f "%ROOT%\modules\metrics\docker-compose.yml"
+set CORE=-f "%ROOT%\docker\core\docker-compose.yml"
+set ALLOY=-f "%ROOT%\docker\alloy\docker-compose.yml"
+set METRICS=-f "%ROOT%\docker\metrics\docker-compose.yml"
 
 set CMD=%1
 

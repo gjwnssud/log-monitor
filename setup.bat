@@ -92,25 +92,10 @@ powershell -ExecutionPolicy Bypass -Command ^
 echo.
 echo [Windows] Alloy를 호스트에서 직접 실행합니다 (Docker 파일 감시 한계 우회)
 echo.
-echo 다음 단계:
-echo   1. Alloy 설치 (최초 1회):
-echo      winget install Grafana.Alloy
+echo Alloy 설치 (최초 1회):
+echo   winget install Grafana.Alloy
 echo.
-echo   2. Docker 서비스 시작:
-echo      start.bat
-echo.
-echo   3. Alloy 실행 (새 터미널에서):
-echo      start-alloy.bat
-echo.
-echo   4. 로그 스트리밍 (새 터미널에서):
-echo      scripts\stream-logs.bat
-echo.
-echo   5. [선택] 메트릭 수집 (새 터미널에서):
-echo      powershell -ExecutionPolicy Bypass -File scripts\collect-metrics.ps1
-echo.
-echo   6. 브라우저 접속:
-echo      Grafana: http://localhost:3000
-echo      Alloy:   http://localhost:12345
+echo 이후 start.bat 으로 모든 서비스가 자동 실행됩니다.
 goto :end
 
 :journal

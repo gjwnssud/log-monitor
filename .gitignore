@@ -12,5 +12,8 @@ start-alloy.bat
 # ~/.gitignore_global에 docker가 있는 경우 이 프로젝트에서 제외
 !docker/
 
+# start.sh 백그라운드 PID 추적 파일
+.start.pids
+
 # 데이터 볼륨
 data/

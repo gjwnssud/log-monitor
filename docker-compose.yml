@@ -27,6 +27,7 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - TZ=Asia/Seoul
     volumes:
       - ./data/grafana:/var/lib/grafana
       - ./grafana-provisioning:/etc/grafana/provisioning

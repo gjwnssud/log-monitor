@@ -9,4 +9,5 @@ contactPoints:
         settings:
           bottoken: "__TELEGRAM_BOT_TOKEN__"
           chatid: "__TELEGRAM_CHAT_ID__"
+          message: '{{ template "log_monitor.telegram" . }}'
         disableResolveMessage: false

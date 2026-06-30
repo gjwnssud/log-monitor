@@ -12,10 +12,12 @@ if not exist "%SCRIPT_DIR%\.env" (
 )
 
 :: 디렉토리 생성
-if not exist "%SCRIPT_DIR%\data\loki"    mkdir "%SCRIPT_DIR%\data\loki"
-if not exist "%SCRIPT_DIR%\data\grafana" mkdir "%SCRIPT_DIR%\data\grafana"
-if not exist "%SCRIPT_DIR%\data\alloy"   mkdir "%SCRIPT_DIR%\data\alloy"
-if not exist "%SCRIPT_DIR%\data\logs"    mkdir "%SCRIPT_DIR%\data\logs"
+if not exist "%SCRIPT_DIR%\data\loki"       mkdir "%SCRIPT_DIR%\data\loki"
+if not exist "%SCRIPT_DIR%\data\grafana"    mkdir "%SCRIPT_DIR%\data\grafana"
+if not exist "%SCRIPT_DIR%\data\alloy"      mkdir "%SCRIPT_DIR%\data\alloy"
+if not exist "%SCRIPT_DIR%\data\logs"       mkdir "%SCRIPT_DIR%\data\logs"
+if not exist "%SCRIPT_DIR%\data\metrics"    mkdir "%SCRIPT_DIR%\data\metrics"
+if not exist "%SCRIPT_DIR%\data\prometheus" mkdir "%SCRIPT_DIR%\data\prometheus"
 echo [setup] data/ 디렉토리 생성 완료
 
 :: Alloy 수집 방식 선택
@@ -78,6 +80,11 @@ echo [setup] alloy-config.alloy 생성 완료 (SSH 스트리밍)
 ) > "%SCRIPT_DIR%\start-alloy.bat"
 
 echo [setup] start-alloy.bat 생성 완료
+
+:: Telegram contact-points.yml 생성
+powershell -ExecutionPolicy Bypass -Command ^
+  "$env = Get-Content '%SCRIPT_DIR%\.env'; $t=''; $c=''; foreach($l in $env){ if($l -match '^TELEGRAM_BOT_TOKEN=(.+)'){$t=$matches[1]} if($l -match '^TELEGRAM_CHAT_ID=(.+)'){$c=$matches[1]} }; if($t -and $c){ $tmpl = Get-Content '%SCRIPT_DIR%\grafana-provisioning\alerting\contact-points.yml.template' -Raw; ($tmpl -replace '__TELEGRAM_BOT_TOKEN__',$t -replace '__TELEGRAM_CHAT_ID__',$c) | Set-Content '%SCRIPT_DIR%\grafana-provisioning\alerting\contact-points.yml' -Encoding UTF8 -NoNewline; Write-Host '[setup] contact-points.yml 생성 완료' } else { Write-Host '[setup] .env에 TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID 미설정 → contact-points.yml 생성 건너뜀' }"
+
 echo.
 echo [Windows] Alloy를 호스트에서 직접 실행합니다 (Docker 파일 감시 한계 우회)
 echo.
@@ -85,16 +92,20 @@ echo 다음 단계:
 echo   1. Alloy 설치 (최초 1회):
 echo      winget install Grafana.Alloy
 echo.
-echo   2. Docker 서비스 시작 (Loki + Grafana):
-echo      docker compose up -d
+echo   2. Docker 서비스 시작:
+echo      [로그만]      docker compose up -d
+echo      [로그+메트릭] docker compose -f docker-compose.yml -f docker-compose.metrics.yml up -d
 echo.
 echo   3. Alloy 실행 (새 터미널에서):
 echo      start-alloy.bat
 echo.
-echo   4. 로그 스트리밍 시작 (또 다른 터미널에서):
+echo   4. 로그 스트리밍 시작 (새 터미널에서):
 echo      stream-logs.bat
 echo.
-echo   5. 브라우저 접속:
+echo   5. [선택] 메트릭 수집 시작 (새 터미널에서):
+echo      powershell -ExecutionPolicy Bypass -File collect-metrics.ps1
+echo.
+echo   6. 브라우저 접속:
 echo      Grafana: http://localhost:3000
 echo      Alloy:   http://localhost:12345
 goto :end

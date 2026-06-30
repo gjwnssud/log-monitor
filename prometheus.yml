@@ -1,0 +1,30 @@
+global:
+  scrape_interval:     30s
+  evaluation_interval: 30s
+
+scrape_configs:
+
+  # ── 방식 1: SSH 폴링 (원격 설치 없음) ──────────────────────────────────────
+  # collect-metrics.sh 가 data/metrics/*.prom 파일을 생성하면
+  # textfile-exporter 컨테이너가 읽어 Prometheus에 노출합니다.
+  - job_name: 'ssh_metrics'
+    static_configs:
+      - targets: ['textfile-exporter:9091']
+
+  # ── 방식 2: node_exporter 직접 접속 (원격 서버에 node_exporter 설치 필요) ───
+  # SSH 터널로 포트를 로컬에 포워딩 후 아래에 추가합니다.
+  # 예시: ssh -L 9101:localhost:9100 <ssh-host>
+  #
+  # - job_name: 'node_exporter'
+  #   static_configs:
+  #     - targets: ['host.docker.internal:9101']
+  #       labels:
+  #         server: 'my-server-1'
+  #     - targets: ['host.docker.internal:9102']
+  #       labels:
+  #         server: 'my-server-2'
+
+  # ── 방식 3: Alloy remote_write (원격 서버에 Grafana Alloy 설치 필요) ────────
+  # 원격 서버의 Alloy 설정에서 prometheus.remote_write 로 이 Prometheus로 push합니다.
+  # Prometheus 엔드포인트: http://<this-host>:9090/api/v1/write
+  # (--web.enable-remote-write-receiver 플래그 필요 — 아래 command에 추가)

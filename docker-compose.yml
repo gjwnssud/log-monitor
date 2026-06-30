@@ -1,4 +1,43 @@
 services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./data/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    deploy:
+      resources:
+        limits:
+          cpus: "${PROMETHEUS_CPU_LIMIT:-0.5}"
+          memory: "${PROMETHEUS_MEM_LIMIT:-256M}"
+        reservations:
+          cpus: "${PROMETHEUS_CPU_RESERVE:-0.1}"
+          memory: "${PROMETHEUS_MEM_RESERVE:-128M}"
+    restart: unless-stopped
+
+  textfile-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: textfile-exporter
+    command:
+      - '--web.listen-address=:9091'
+      - '--collector.disable-defaults'
+      - '--collector.textfile'
+      - '--collector.textfile.directory=/textfiles'
+    volumes:
+      - ./data/metrics:/textfiles:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: "64M"
+    restart: unless-stopped
+
   loki:
     image: grafana/loki:latest
     container_name: loki

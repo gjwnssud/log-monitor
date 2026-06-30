@@ -4,7 +4,7 @@ set -e
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPTS_DIR/.." && pwd)"
 METRICS_DIR="$ROOT/data/metrics"
-INTERVAL=30        # 수집 주기(초) — prometheus.yml scrape_interval 과 맞출 것
+INTERVAL=10        # 수집 주기(초) — prometheus.yml scrape_interval 과 맞출 것
 RECONNECT_DELAY=5
 MAX_SIZE_MB=10     # .prom 로테이션 임계치
 ROTATE_KEEP=5      # 보관할 .prom 백업 수

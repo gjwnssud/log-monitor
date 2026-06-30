@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-METRICS_DIR="$SCRIPT_DIR/data/metrics"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SCRIPTS_DIR/.." && pwd)"
+METRICS_DIR="$ROOT/data/metrics"
 INTERVAL=30
 RECONNECT_DELAY=5
 PIDS=()
@@ -166,7 +167,7 @@ collect_server() {
     done
 }
 
-if [ ! -f "$SCRIPT_DIR/servers.conf" ]; then
+if [ ! -f "$ROOT/servers.conf" ]; then
     echo "[error] servers.conf 파일이 없습니다."
     exit 1
 fi
@@ -176,7 +177,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     read -r alias ssh_host _rest <<< "$line"
     collect_server "$alias" "$ssh_host" &
     PIDS+=($!)
-done < "$SCRIPT_DIR/servers.conf"
+done < "$ROOT/servers.conf"
 
 echo "[metrics] 전체 서버 수집 시작. Ctrl+C로 종료."
 wait

@@ -1,9 +1,10 @@
 $Interval       = 30
 $ReconnectDelay = 5
 
-$ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$MetricsDir  = Join-Path $ScriptDir "data\metrics"
-$ServersConf = Join-Path $ScriptDir "servers.conf"
+$ScriptsDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root        = Split-Path -Parent $ScriptsDir
+$MetricsDir  = Join-Path $Root "data\metrics"
+$ServersConf = Join-Path $Root "servers.conf"
 
 if (-not (Test-Path $MetricsDir)) { New-Item -ItemType Directory -Path $MetricsDir -Force | Out-Null }
 

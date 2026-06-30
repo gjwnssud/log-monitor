@@ -5,8 +5,8 @@ services:
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./data/prometheus:/prometheus
+      - ${ROOT}/config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${ROOT}/data/prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -30,7 +30,7 @@ services:
       - '--collector.textfile'
       - '--collector.textfile.directory=/textfiles'
     volumes:
-      - ./data/metrics:/textfiles:ro
+      - ${ROOT}/data/metrics:/textfiles:ro
     deploy:
       resources:
         limits:

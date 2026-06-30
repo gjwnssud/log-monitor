@@ -4,9 +4,10 @@ $RotationCheckInterval  = 30
 $ReconnectCheckInterval = 5
 $ReconnectDelay         = 5
 
-$ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$LogDir      = Join-Path $ScriptDir "data\logs"
-$ServersConf = Join-Path $ScriptDir "servers.conf"
+$ScriptsDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root        = Split-Path -Parent $ScriptsDir
+$LogDir      = Join-Path $Root "data\logs"
+$ServersConf = Join-Path $Root "servers.conf"
 
 if (-not (Test-Path $ServersConf)) {
     Write-Host "[error] servers.conf 파일이 없습니다."

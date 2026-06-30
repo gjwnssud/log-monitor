@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-LOG_DIR="$SCRIPT_DIR/data/logs"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SCRIPTS_DIR/.." && pwd)"
+LOG_DIR="$ROOT/data/logs"
 PIDS=()
 
 MAX_SIZE_MB=50
@@ -10,7 +11,7 @@ ROTATE_KEEP=5
 CHECK_INTERVAL=30
 RECONNECT_DELAY=5
 
-if [ ! -f "$SCRIPT_DIR/servers.conf" ]; then
+if [ ! -f "$ROOT/servers.conf" ]; then
   echo "[error] servers.conf 파일이 없습니다."
   exit 1
 fi
@@ -53,7 +54,7 @@ monitor_rotation() {
       if [ -f "$log_file" ] && [ "$(file_size_mb "$log_file")" -ge "$MAX_SIZE_MB" ]; then
         rotate_log "$log_file"
       fi
-    done < "$SCRIPT_DIR/servers.conf"
+    done < "$ROOT/servers.conf"
   done
 }
 
@@ -87,7 +88,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   echo "[stream] ${alias} → ${ssh_host} (${service})"
   stream_server "$alias" "$ssh_host" "$service" &
   PIDS+=($!)
-done < "$SCRIPT_DIR/servers.conf"
+done < "$ROOT/servers.conf"
 
 monitor_rotation &
 PIDS+=($!)

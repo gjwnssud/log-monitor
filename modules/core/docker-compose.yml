@@ -5,8 +5,8 @@ services:
     ports:
       - "${LOKI_PORT:-3100}:3100"
     volumes:
-      - ./data/loki:/loki
-      - ./loki-config.yml:/etc/loki/local-config.yaml
+      - ${ROOT}/data/loki:/loki
+      - ${ROOT}/config/loki.yml:/etc/loki/local-config.yaml
     deploy:
       resources:
         limits:
@@ -29,8 +29,8 @@ services:
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - TZ=Asia/Seoul
     volumes:
-      - ./data/grafana:/var/lib/grafana
-      - ./grafana-provisioning:/etc/grafana/provisioning
+      - ${ROOT}/data/grafana:/var/lib/grafana
+      - ${ROOT}/config/grafana/provisioning:/etc/grafana/provisioning
     deploy:
       resources:
         limits:

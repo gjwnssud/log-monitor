@@ -1,10 +1,10 @@
 # 환경 설정 (개인 정보 포함)
 .env
 servers.conf
-grafana-provisioning/alerting/contact-points.yml
+config/grafana/provisioning/alerting/contact-points.yml
 
 # setup.sh가 생성하는 파일
-alloy-config.alloy
+config/alloy/alloy-config.alloy
 start-alloy.sh
 start-alloy.bat
 

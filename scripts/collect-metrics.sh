@@ -19,31 +19,28 @@ import sys, re, time
 alias = sys.argv[1]
 data  = sys.stdin.read()
 
-# ───SEP─── 구분자로 /proc 섹션과 df 섹션 분리
 parts    = data.split('___SEP___')
 proc_raw = parts[0] if len(parts) > 0 else ''
 df_raw   = parts[1] if len(parts) > 1 else ''
 
-out = []
+# Prometheus text format: HELP/TYPE 한 번, 샘플은 모아서 출력
+metrics = {}  # name -> (help, type, [sample_lines])
 
-# ── Load average (/proc/loadavg 첫 줄) ───────────────────────────────────────
+def add(name, help_text, mtype, sample):
+    if name not in metrics:
+        metrics[name] = (help_text, mtype, [])
+    metrics[name][2].append(sample)
+
+# ── Load average ──────────────────────────────────────────────────────────────
 for line in proc_raw.splitlines():
     m = re.match(r'^([\d.]+)\s+([\d.]+)\s+([\d.]+)', line)
     if m:
-        out += [
-            f'# HELP server_load_avg_1m  1분 부하 평균',
-            f'# TYPE server_load_avg_1m gauge',
-            f'server_load_avg_1m{{server="{alias}"}} {m.group(1)}',
-            f'# HELP server_load_avg_5m  5분 부하 평균',
-            f'# TYPE server_load_avg_5m gauge',
-            f'server_load_avg_5m{{server="{alias}"}} {m.group(2)}',
-            f'# HELP server_load_avg_15m 15분 부하 평균',
-            f'# TYPE server_load_avg_15m gauge',
-            f'server_load_avg_15m{{server="{alias}"}} {m.group(3)}',
-        ]
+        add('server_load_avg_1m',  '1분 부하 평균',  'gauge', f'server_load_avg_1m{{server="{alias}"}} {m.group(1)}')
+        add('server_load_avg_5m',  '5분 부하 평균',  'gauge', f'server_load_avg_5m{{server="{alias}"}} {m.group(2)}')
+        add('server_load_avg_15m', '15분 부하 평균', 'gauge', f'server_load_avg_15m{{server="{alias}"}} {m.group(3)}')
         break
 
-# ── Memory (/proc/meminfo) ────────────────────────────────────────────────────
+# ── Memory ────────────────────────────────────────────────────────────────────
 mem = {}
 for line in proc_raw.splitlines():
     m = re.match(r'^(\w+):\s+(\d+)\s+kB', line)
@@ -51,80 +48,64 @@ for line in proc_raw.splitlines():
         mem[m.group(1)] = int(m.group(2)) * 1024
 
 if 'MemTotal' in mem and 'MemAvailable' in mem:
-    out += [
-        f'# HELP server_memory_total_bytes     전체 메모리 (bytes)',
-        f'# TYPE server_memory_total_bytes gauge',
-        f'server_memory_total_bytes{{server="{alias}"}} {mem["MemTotal"]}',
-        f'# HELP server_memory_available_bytes 사용 가능 메모리 (bytes)',
-        f'# TYPE server_memory_available_bytes gauge',
-        f'server_memory_available_bytes{{server="{alias}"}} {mem["MemAvailable"]}',
-    ]
+    add('server_memory_total_bytes',     '전체 메모리 (bytes)',      'gauge', f'server_memory_total_bytes{{server="{alias}"}} {mem["MemTotal"]}')
+    add('server_memory_available_bytes', '사용 가능 메모리 (bytes)', 'gauge', f'server_memory_available_bytes{{server="{alias}"}} {mem["MemAvailable"]}')
 
-# ── Network (/proc/net/dev) ───────────────────────────────────────────────────
-SKIP_IFACE_PREFIX = ('lo', 'veth', 'br-', 'docker', 'flannel', 'cali', 'cilium')
-in_net = False
-net_header_seen = False
+# ── Network ───────────────────────────────────────────────────────────────────
+SKIP_IFACE = ('lo', 'veth', 'br-', 'docker', 'flannel', 'cali', 'cilium')
+in_net = net_header = False
 
 for line in proc_raw.splitlines():
     if 'Inter-' in line:
-        in_net = True
-        continue
-    if in_net and not net_header_seen and 'bytes' in line:
-        net_header_seen = True
-        continue
-    if in_net and net_header_seen and ':' in line:
+        in_net = True; continue
+    if in_net and not net_header and 'bytes' in line:
+        net_header = True; continue
+    if in_net and net_header and ':' in line:
         iface_part, stat_part = line.split(':', 1)
         iface = iface_part.strip()
-        if any(iface.startswith(p) for p in SKIP_IFACE_PREFIX):
+        if any(iface.startswith(p) for p in SKIP_IFACE):
             continue
         nums = stat_part.split()
         if len(nums) >= 9:
-            out += [
-                f'# HELP server_network_receive_bytes_total  네트워크 수신 누적 (bytes)',
-                f'# TYPE server_network_receive_bytes_total counter',
-                f'server_network_receive_bytes_total{{server="{alias}",interface="{iface}"}} {nums[0]}',
-                f'# HELP server_network_transmit_bytes_total 네트워크 송신 누적 (bytes)',
-                f'# TYPE server_network_transmit_bytes_total counter',
-                f'server_network_transmit_bytes_total{{server="{alias}",interface="{iface}"}} {nums[8]}',
-            ]
+            add('server_network_receive_bytes_total',  '네트워크 수신 누적 (bytes)', 'counter',
+                f'server_network_receive_bytes_total{{server="{alias}",interface="{iface}"}} {nums[0]}')
+            add('server_network_transmit_bytes_total', '네트워크 송신 누적 (bytes)', 'counter',
+                f'server_network_transmit_bytes_total{{server="{alias}",interface="{iface}"}} {nums[8]}')
 
-# ── Disk (df -P) ──────────────────────────────────────────────────────────────
+# ── Disk ──────────────────────────────────────────────────────────────────────
 SKIP_FS = {'tmpfs', 'devtmpfs', 'squashfs', 'udev', 'overlay', 'shm', 'cgroup', 'cgroup2'}
+df_header = False
 
-df_header_seen = False
 for line in df_raw.splitlines():
     line = line.strip()
-    if not line:
-        continue
-    if not df_header_seen:
-        df_header_seen = True
-        continue
+    if not line: continue
+    if not df_header:
+        df_header = True; continue
     cols = line.split()
-    if len(cols) < 6:
-        continue
+    if len(cols) < 6: continue
     fs, mount = cols[0], cols[5]
     if fs in SKIP_FS or any(fs.startswith(p) for p in ('tmpfs', 'devtmpfs', 'squashfs', 'overlay')):
         continue
     try:
         total = int(cols[1]) * 1024
         used  = int(cols[2]) * 1024
-        out += [
-            f'# HELP server_disk_total_bytes 디스크 전체 크기 (bytes)',
-            f'# TYPE server_disk_total_bytes gauge',
-            f'server_disk_total_bytes{{server="{alias}",mountpoint="{mount}"}} {total}',
-            f'# HELP server_disk_used_bytes  디스크 사용량 (bytes)',
-            f'# TYPE server_disk_used_bytes gauge',
-            f'server_disk_used_bytes{{server="{alias}",mountpoint="{mount}"}} {used}',
-        ]
+        add('server_disk_total_bytes', '디스크 전체 크기 (bytes)', 'gauge',
+            f'server_disk_total_bytes{{server="{alias}",mountpoint="{mount}"}} {total}')
+        add('server_disk_used_bytes',  '디스크 사용량 (bytes)',    'gauge',
+            f'server_disk_used_bytes{{server="{alias}",mountpoint="{mount}"}} {used}')
     except ValueError:
         pass
 
 # ── 수집 시각 ─────────────────────────────────────────────────────────────────
-out += [
-    f'# HELP server_metrics_collected_timestamp 마지막 수집 시각 (Unix timestamp)',
-    f'# TYPE server_metrics_collected_timestamp gauge',
-    f'server_metrics_collected_timestamp{{server="{alias}"}} {int(time.time())}',
-]
+add('server_metrics_collected_timestamp', '마지막 수집 시각 (Unix timestamp)', 'gauge',
+    f'server_metrics_collected_timestamp{{server="{alias}"}} {int(time.time())}')
+
+# ── 출력 (HELP/TYPE 메트릭명당 1회) ──────────────────────────────────────────
+out = []
+for name, (help_text, mtype, samples) in metrics.items():
+    out.append(f'# HELP {name} {help_text}')
+    out.append(f'# TYPE {name} {mtype}')
+    out.extend(samples)
 
 print('\n'.join(out))
 PYEOF

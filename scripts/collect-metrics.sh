@@ -6,7 +6,9 @@ ROOT="$(cd "$SCRIPTS_DIR/.." && pwd)"
 METRICS_DIR="$ROOT/data/metrics"
 INTERVAL=30        # 수집 주기(초) — prometheus.yml scrape_interval 과 맞출 것
 RECONNECT_DELAY=5
-ROTATE_KEEP=3      # .prom 백업 보관 수
+MAX_SIZE_MB=10     # .prom 로테이션 임계치
+ROTATE_KEEP=5      # 보관할 .prom 백업 수
+CHECK_INTERVAL=60  # 로테이션 체크 주기(초)
 PIDS=()
 
 mkdir -p "$METRICS_DIR"
@@ -147,6 +149,13 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM HUP
 
+file_size_mb() {
+    local file="$1"
+    local size
+    size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)
+    echo $(( size / 1024 / 1024 ))
+}
+
 rotate_prom() {
     local file="$1"
     [ -f "$file" ] || return 0
@@ -154,6 +163,21 @@ rotate_prom() {
         [ -f "${file}.${i}" ] && mv "${file}.${i}" "${file}.$((i + 1))"
     done
     cp "$file" "${file}.1"
+    echo "[rotate] $(basename "$file") rotated (보관: ${ROTATE_KEEP}개)"
+}
+
+monitor_rotation() {
+    while true; do
+        sleep "$CHECK_INTERVAL"
+        while IFS= read -r line || [ -n "$line" ]; do
+            [[ -z "$line" || "$line" =~ ^# ]] && continue
+            read -r alias _ _ <<< "$line"
+            local prom_file="$METRICS_DIR/${alias}.prom"
+            if [ -f "$prom_file" ] && [ "$(file_size_mb "$prom_file")" -ge "$MAX_SIZE_MB" ]; then
+                rotate_prom "$prom_file"
+            fi
+        done < "$ROOT/servers.conf"
+    done
 }
 
 collect_server() {
@@ -179,7 +203,6 @@ collect_server() {
             2>/dev/null)
 
         if [ -n "$raw" ] && echo "$raw" | python3 "$PARSER" "$alias" "$cache_file" > "$tmp_file" 2>/dev/null; then
-            rotate_prom "$out_file"
             mv "$tmp_file" "$out_file"
         else
             rm -f "$tmp_file"
@@ -204,6 +227,10 @@ while IFS= read -r line || [ -n "$line" ]; do
     PIDS+=($!)
 done < "$ROOT/servers.conf"
 
+monitor_rotation &
+PIDS+=($!)
+
 echo "[metrics] 전체 서버 수집 시작. Ctrl+C로 종료."
-echo "[metrics] 수집 주기: ${INTERVAL}초 | 재시도 대기: ${RECONNECT_DELAY}초 | 백업 보관: ${ROTATE_KEEP}개"
+echo "[rotate] 로테이션 기준: ${MAX_SIZE_MB}MB, 보관: ${ROTATE_KEEP}개, 체크 주기: ${CHECK_INTERVAL}초"
+echo "[reconnect] 재연결 대기: ${RECONNECT_DELAY}초 (SSH keepalive: 10s × 3회)"
 wait

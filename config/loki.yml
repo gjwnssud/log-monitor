@@ -17,10 +17,6 @@ common:
     kvstore:
       store: inmemory
 
-ingester:
-  chunk_idle_period: 30s
-  max_chunk_age: 1m
-  flush_check_period: 5s
 
 schema_config:
   configs:

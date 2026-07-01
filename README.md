@@ -263,6 +263,8 @@ FATAL 로그 발생, ERROR 급증 시 Grafana Alerting이 Telegram으로 알림�
 | 🌐 네트워크 | 수신 속도 (RX) / 송신 속도 (TX) |
 | 💿 디스크 | 디스크 사용률 |
 
+CPU/메모리/디스크 사용률 패널은 y축이 0~100%로 고정돼 있어 서버 간 수치를 그대로 비교할 수 있습니다 (네트워크 RX/TX는 값 범위가 넓어 자동 스케일링).
+
 ### UI에서 대시보드 수정
 
 `allowUiUpdates: true` 설정으로 Grafana UI에서 직접 수정·저장이 가능합니다.

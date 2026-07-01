@@ -74,15 +74,15 @@ case "$CHOICE" in
     echo "[setup] config/alloy/alloy-config.alloy 생성 완료 (SSH 스트리밍)"
 
     if $IS_MACOS; then
-      START_ALLOY="$SCRIPT_DIR/start-alloy.sh"
+      START_ALLOY="$SCRIPT_DIR/scripts/start-alloy.sh"
       cat > "$START_ALLOY" <<EOF
 #!/usr/bin/env bash
 set -e
-SCRIPT_DIR="\$(cd "\$(dirname "\$0")" && pwd)"
-exec alloy run --storage.path "\$SCRIPT_DIR/data/alloy" "\$SCRIPT_DIR/config/alloy/alloy-config.alloy"
+ROOT="\$(cd "\$(dirname "\$0")/.." && pwd)"
+exec alloy run --storage.path "\$ROOT/data/alloy" "\$ROOT/config/alloy/alloy-config.alloy"
 EOF
       chmod +x "$START_ALLOY"
-      echo "[setup] start-alloy.sh 생성 완료"
+      echo "[setup] scripts/start-alloy.sh 생성 완료"
       echo ""
       echo "[macOS] Alloy를 호스트에서 직접 실행합니다 (Docker 파일 감시 한계 우회)"
       echo ""

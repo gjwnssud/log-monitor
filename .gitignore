@@ -6,8 +6,8 @@ config/grafana/provisioning/alerting/templates.yml
 
 # setup.sh가 생성하는 파일
 config/alloy/alloy-config.alloy
-start-alloy.sh
-start-alloy.bat
+scripts/start-alloy.sh
+scripts/start-alloy.bat
 
 # ~/.gitignore_global에 docker가 있는 경우 이 프로젝트에서 제외
 !docker/

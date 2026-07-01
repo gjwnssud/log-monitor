@@ -76,10 +76,11 @@ echo [setup] config\alloy\alloy-config.alloy 생성 완료 (SSH 스트리밍)
     echo @echo off
     echo set SCRIPT_DIR=%%~dp0
     echo set SCRIPT_DIR=%%SCRIPT_DIR:~0,-1%%
-    echo alloy run --storage.path "%%SCRIPT_DIR%%\data\alloy" "%%SCRIPT_DIR%%\config\alloy\alloy-config.alloy"
-) > "%SCRIPT_DIR%\start-alloy.bat"
+    echo set ROOT=%%SCRIPT_DIR%%\..
+    echo alloy run --storage.path "%%ROOT%%\data\alloy" "%%ROOT%%\config\alloy\alloy-config.alloy"
+) > "%SCRIPT_DIR%\scripts\start-alloy.bat"
 
-echo [setup] start-alloy.bat 생성 완료
+echo [setup] scripts\start-alloy.bat 생성 완료
 
 :: Telegram contact-points.yml 생성
 powershell -ExecutionPolicy Bypass -Command ^

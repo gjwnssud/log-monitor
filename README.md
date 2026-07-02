@@ -193,6 +193,10 @@ FATAL 로그 발생, ERROR 급증 시 Grafana Alerting이 Telegram으로 알림�
 | FATAL 로그 발생 | 최근 5분간 FATAL 1건 이상, 1분 지속 | critical |
 | ERROR 급증 | 최근 5분간 ERROR 30건 초과, 5분 지속 | warning |
 
+두 규칙 모두 `sum by (server) (...)`로 집계해 **서버별로 개별 알림**이 발생합니다. Telegram 메시지에는 발생 서버,
+발생~해제(또는 진행 중) 시간 범위, 그리고 해당 서버·레벨·시간대로 필터링된 로그 모니터링 대시보드 링크가 포함됩니다
+(메시지 형식은 `config/grafana/provisioning/alerting/templates.yml.template`에서 수정).
+
 ---
 
 ## Grafana 접속

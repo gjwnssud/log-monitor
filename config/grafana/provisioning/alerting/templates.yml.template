@@ -13,15 +13,18 @@ templates:
       🟠 [경고] {{ index .Labels "alertname" }}
       {{- end }}
       ━━━━━━━━━━━━━━━━━━━
+      🖥 서버: {{ index .Labels "server" }}
       📊 {{ .Annotations.description }}
-      ⏰ 발생: {{ .StartsAt.Local.Format "01/02 15:04" }}
+      ⏰ 발생: {{ .StartsAt.Local.Format "01/02 15:04" }} ~ 진행 중
+      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident?var-server={{ index .Labels "server" }}&var-level={{ index .Labels "level" }}&from={{ .StartsAt.UnixMilli }}&to=now
       {{ end -}}
       {{- else -}}
       {{- range .Alerts.Resolved }}
       ✅ [알림 해제] {{ index .Labels "alertname" }}
       ━━━━━━━━━━━━━━━━━━━
-      ⏰ {{ .StartsAt.Local.Format "01/02 15:04" }} ~ {{ .EndsAt.Local.Format "15:04" }}
+      🖥 서버: {{ index .Labels "server" }}
+      ⏰ {{ .StartsAt.Local.Format "01/02 15:04" }} ~ {{ .EndsAt.Local.Format "01/02 15:04" }}
+      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident?var-server={{ index .Labels "server" }}&var-level={{ index .Labels "level" }}&from={{ .StartsAt.UnixMilli }}&to={{ .EndsAt.UnixMilli }}
       {{ end -}}
       {{- end -}}
-      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident
       {{- end }}

@@ -750,13 +750,14 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{job=\"logs\",level=~\"$level\",server=~\"$server\"} |= \"$search\"",
+          "expr": "{job=\"logs\",level=~\"$level\",server=~\"$server\"} |~ \"(?i)$search\"",
           "queryType": "range",
           "legendFormat": ""
         }
       ],
       "options": {
         "showLabels": true,
+        "showCommonLabels": true,
         "showTime": true,
         "wrapLogMessage": true,
         "sortOrder": "Descending",
@@ -859,7 +860,7 @@
         "name": "search",
         "type": "textbox",
         "label": "로그 검색",
-        "description": "로그 스트림에서 특정 텍스트를 포함한 라인만 표시 (비워두면 전체 표시)",
+        "description": "정규표현식 지원 (대소문자 무시). 여러 검색어는 | 로 연결 (예: timeout|C_DENY). 비워두면 전체 표시",
         "hide": 0,
         "current": {
           "value": ""

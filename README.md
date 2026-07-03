@@ -256,7 +256,7 @@ FATAL 로그 발생, ERROR 급증 시 Grafana Alerting이 Telegram으로 알림�
 | 로그 레벨 | 멀티셀렉 (TRACE / DEBUG / INFO / WARN / ERROR / FATAL / All) |
 | 로그 검색 | 정규표현식 지원 (대소문자 무시). 여러 검색어는 `\|`로 연결 (예: `timeout\|C_DENY`) |
 
-로그 스트림의 각 줄 앞에는 `[서버명]`이 항상 표시됩니다 (Loki `line_format`으로 라인에 직접 삽입 — 서버를 1개로 좁혀도 사라지지 않음).
+> 서버를 1개로 좁히면 그라파나 로그 패널 기본 동작상 줄 앞의 `server` 라벨이 보이지 않을 수 있습니다. 이 경우 로그 줄을 클릭 → **Show log details**로 전체 라벨(서버 포함)을 확인할 수 있습니다.
 
 ## 서버 리소스 대시보드
 

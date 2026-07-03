@@ -757,7 +757,6 @@
       ],
       "options": {
         "showLabels": true,
-        "showCommonLabels": true,
         "showTime": true,
         "wrapLogMessage": true,
         "sortOrder": "Descending",

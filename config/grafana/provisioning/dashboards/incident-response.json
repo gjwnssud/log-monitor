@@ -750,7 +750,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{job=\"logs\",level=~\"$level\",server=~\"$server\"} |~ \"(?i)$search\"",
+          "expr": "{job=\"logs\",level=~\"$level\",server=~\"$server\"} |~ \"(?i)$search\" | line_format \"[{{.server}}] {{__line__}}\"",
           "queryType": "range",
           "legendFormat": ""
         }

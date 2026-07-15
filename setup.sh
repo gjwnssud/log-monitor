@@ -64,8 +64,9 @@ case "$CHOICE" in
     TEMP_FILE=$(mktemp)
     while IFS= read -r line || [ -n "$line" ]; do
       [[ -z "$line" || "$line" =~ ^# ]] && continue
-      read -r alias ssh_host service <<< "$line"
-      echo "    {__path__ = \"${LOG_DIR}/${alias}.log\", job = \"logs\", server = \"${alias}\"}," >> "$TEMP_FILE"
+      read -r alias ssh_host service group <<< "$line"
+      group="${group:-default}"
+      echo "    {__path__ = \"${LOG_DIR}/${group}-${alias}.log\", job = \"logs\", server = \"${alias}\", group = \"${group}\"}," >> "$TEMP_FILE"
     done < "$SCRIPT_DIR/servers.conf"
 
     sed -i.bak "s|// __SERVERS__|$(sed 's/[\/&]/\\&/g' "$TEMP_FILE" | tr '\n' '§' | sed 's/§/\\n/g')|" "$OUTPUT"
@@ -155,3 +156,6 @@ generate_notification_templates() {
 }
 
 generate_notification_templates
+
+# servers.conf의 group별 Grafana 대시보드 생성
+"$SCRIPT_DIR/scripts/generate-dashboards.sh"

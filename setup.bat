@@ -57,7 +57,8 @@ set LOG_DIR_FWD=%LOG_DIR:\=/%
     echo foreach ^($line in $servers^) {
     echo     $parts = $line -split '\s+'
     echo     $alias = $parts[0]
-    echo     $entries += "    {__path__ = ``""$logDir/$alias.log``"", job = ``""logs``"", server = ``""$alias``""},"
+    echo     $group = if ^($parts.Length -ge 4^) { $parts[3] } else { 'default' }
+    echo     $entries += "    {__path__ = ``""$logDir/$group-$alias.log``"", job = ``""logs``"", server = ``""$alias``"", group = ``""$group``""},"
     echo }
     echo $out = @^(^)
     echo foreach ^($line in $template^) {
@@ -117,3 +118,6 @@ echo   1. config\alloy\alloy-config.alloy 에서 SERVER_ALIAS, LOKI_HOST, 로그
 echo   2. 각 서버에 Alloy 설치 후 config 배포
 
 :end
+
+:: servers.conf의 group별 Grafana 대시보드 생성
+powershell -ExecutionPolicy Bypass -File "%SCRIPT_DIR%\scripts\generate-dashboards.ps1"

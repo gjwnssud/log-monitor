@@ -135,16 +135,20 @@ start.bat      # Windows
 
 **servers.conf 형식:**
 ```
-# alias  ssh-host  service-name
-controller  bastion-host   my-controller-service
-server-1    app-server-1   my-app-service
+# alias  ssh-host  service-name  group
+controller  bastion-host   my-controller-service   demo-payment
+server-1    app-server-1   my-app-service          demo-payment
+server-1    p-app-server-1 my-app-service          prod-payment
 ```
 
 | 컬럼 | 설명 |
 |------|------|
-| alias | 로그 파일명 및 Grafana 라벨로 사용 (영문, 숫자, 하이픈) |
-| ssh-host | `~/.ssh/config`에 등록된 Host명 또는 IP |
+| alias | 로그 파일명 및 Grafana `server` 라벨로 사용 (영문, 숫자, 하이픈). group이 다르면 재사용 가능 (같은 group 내에서는 유일해야 함) |
+| ssh-host | `~/.ssh/config`에 등록된 Host명 또는 IP (실제 서버이므로 항상 전역 유일해야 함) |
 | service-name | `journalctl -u [service-name]`에 사용되는 systemd 서비스명 |
+| group | 대시보드 분리 기준이자 Grafana `group` 라벨. 영문 kebab-case 권장. 생략 시 `default` |
+
+같은 `group` 값을 가진 서버는 `setup.sh`(`setup.bat`) 실행 시 Grafana 폴더 하나 + 대시보드 세트(서버 리소스/로그 모니터링)로 자동 묶입니다. 로그·메트릭 데이터는 내부적으로 `{group}-{alias}` 조합으로 식별되므로, 서로 다른 group끼리는 alias가 겹쳐도 안전합니다.
 
 **로그 로테이션:**
 
@@ -159,17 +163,18 @@ server-1    app-server-1   my-app-service
 
 ```
 data/logs/
-├── server-1.log      ← 현재 스트리밍 중
-├── server-1.log.1    ← 가장 최근 rotate된 파일
-├── server-1.log.2
+├── demo-payment-server-1.log      ← 현재 스트리밍 중 (파일명 = {group}-{alias})
+├── demo-payment-server-1.log.1    ← 가장 최근 rotate된 파일
+├── demo-payment-server-1.log.2
 └── ...
 ```
 
 **메트릭 수집 (2번 모드):**
 
 `scripts/collect-metrics.sh`가 SSH로 원격 서버의 `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `df`를 주기적으로 폴링해
-CPU 사용률(%), 메모리 사용률, 네트워크 RX/TX, 디스크 사용률을 `data/metrics/*.prom` 파일로 기록하고,
-`textfile-exporter`가 이를 읽어 Prometheus에 노출합니다. 수집 주기는 `scripts/collect-metrics.sh` 상단 `INTERVAL`(초)에서 조정합니다.
+CPU 사용률(%), 메모리 사용률, 네트워크 RX/TX, 디스크 사용률을 `data/metrics/{group}-{alias}.prom` 파일로 기록하고,
+`textfile-exporter`가 이를 읽어 Prometheus에 노출합니다 (각 메트릭에는 `server`, `group` 라벨이 함께 붙습니다).
+수집 주기는 `scripts/collect-metrics.sh` 상단 `INTERVAL`(초)에서 조정합니다.
 
 ---
 
@@ -203,10 +208,10 @@ FATAL 로그 발생, ERROR 급증 시 Grafana Alerting이 Telegram으로 알림�
 
 브라우저에서 `http://localhost:3000` 접속 — Loki/Prometheus 데이터소스와 대시보드가 **자동으로 프로비저닝**됩니다.
 
-- **로그 모니터링 대시보드**: Dashboards 메뉴 → `로그 모니터링`
-- **서버 리소스 대시보드**: Dashboards 메뉴 → `서버 리소스` (2번 모드로 시작했을 때만 데이터가 채워짐)
+- **로그 모니터링 / 서버 리소스 대시보드 (전체)**: Dashboards 메뉴 최상위 → `로그 모니터링` / `서버 리소스` (서버 리소스는 2번 모드로 시작했을 때만 데이터가 채워짐). alias가 group 간에 겹치는 경우 이 전체 대시보드에서는 `{group}/{server}` 형태로 표시됩니다.
+- **그룹별 대시보드**: servers.conf에 `group`을 적어두면 `setup.sh`(`setup.bat`) 실행 시 Dashboards 메뉴에 group명과 동일한 폴더가 생기고, 그 안에 해당 그룹 서버만 필터링된 `서버 리소스`/`로그 모니터링` 대시보드가 자동으로 생성됩니다.
 - **직접 탐색**: Explore 메뉴 → `{job="logs"}` 쿼리로 전체 로그 확인
-- **서버 필터**: `{job="logs", server="server-1"}`
+- **서버 필터**: `{job="logs", server="server-1"}` (그룹까지 특정하려면 `{job="logs", group="demo-payment", server="server-1"}`)
 - **에러만 보기**: `{job="logs", level="ERROR"}`
 
 **Alloy UI:** `http://localhost:12345` — 컴포넌트 상태 및 로그 수집 현황 확인
@@ -224,7 +229,9 @@ FATAL 로그 발생, ERROR 급증 시 Grafana Alerting이 Telegram으로 알림�
 
 ## 로그 모니터링 대시보드
 
-`config/grafana/provisioning/dashboards/incident-response.json`에 정의된 대시보드가 자동 로드됩니다.
+`config/grafana/provisioning/dashboards/incident-response.json`에 정의된 대시보드가 자동 로드됩니다 (전체 서버 대상).
+servers.conf에 `group`을 지정하면 그룹별로 필터링된 사본이 `config/grafana/provisioning/dashboards/<group>/incident-response.json`에
+자동 생성됩니다 (`scripts/generate-dashboards.sh`/`.ps1`, setup 시 실행 — 자세한 내용은 [공통 설정](#공통-설정) 참고).
 
 **🖥️ 서버 연결 상태**
 
@@ -261,6 +268,7 @@ FATAL 로그 발생, ERROR 급증 시 Grafana Alerting이 Telegram으로 알림�
 ## 서버 리소스 대시보드
 
 `config/grafana/provisioning/dashboards/resources.json`에 정의된 대시보드로, 2번 모드(로그+메트릭)로 시작했을 때만 데이터가 채워집니다.
+그룹별 사본 생성 방식은 위 [로그 모니터링 대시보드](#로그-모니터링-대시보드)와 동일합니다.
 
 | 섹션 | 패널 |
 |------|------|
@@ -276,6 +284,10 @@ CPU/메모리/디스크 사용률 패널은 y축이 0~100%로 고정돼 있어 �
 `allowUiUpdates: true` 설정으로 Grafana UI에서 직접 수정·저장이 가능합니다.
 수정 내용은 Grafana 내부 DB(`data/grafana/`)에 저장되며, JSON 파일과는 별개로 관리됩니다.
 JSON 파일에 반영하려면 UI에서 **Share → Export → Save to file** 후 파일을 교체하세요.
+
+> `config/grafana/provisioning/dashboards/<group>/`의 그룹별 대시보드는 setup 재실행 시
+> `resources.json`/`incident-response.json`(전체 대시보드) 기준으로 매번 새로 생성됩니다.
+> 공통으로 반영할 패널 수정은 전체 대시보드 쪽 JSON 파일에 하세요.
 
 ### log4j2 패턴이 다를 경우
 
@@ -331,6 +343,7 @@ log-monitor/
 ├── scripts/
 │   ├── stream-logs.sh / .ps1 / .bat           # SSH 로그 스트리밍 + 로테이션
 │   ├── collect-metrics.sh / .ps1              # SSH 메트릭 폴링 + 로테이션
+│   ├── generate-dashboards.sh / .ps1          # servers.conf의 group별 대시보드 생성 (setup 시 실행)
 │   └── start-alloy.sh / .bat                  # macOS/Windows용 Alloy 호스트 실행 스크립트 (setup 시 자동 생성, gitignore)
 ├── config/
 │   ├── loki.yml                               # Loki 설정 (flush 주기 등)
@@ -343,7 +356,8 @@ log-monitor/
 │   │   └── alloy-config.alloy                 # setup 시 생성되는 실제 설정 (gitignore)
 │   └── grafana/provisioning/
 │       ├── datasources/                       # Loki/Prometheus 데이터소스 자동 등록
-│       ├── dashboards/                        # incident-response.json(로그), resources.json(리소스)
+│       ├── dashboards/                        # incident-response.json(로그), resources.json(리소스, 전체)
+│       │   └── <group>/                       # group별 자동 생성 사본 (setup 시 생성, gitignore)
 │       └── alerting/                          # alert-rules.yml, notification-policies.yml,
 │                                               #   contact-points.yml/templates.yml (setup 시 생성, gitignore)
 └── data/                                      # 볼륨 데이터 (gitignore)

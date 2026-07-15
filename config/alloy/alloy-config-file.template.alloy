@@ -14,6 +14,7 @@ local.file_match "local" {
 
     job    = "logs",
     server = "SERVER_ALIAS",  // 이 서버를 식별할 이름으로 변경
+    group  = "GROUP_NAME",    // 대시보드 분리 기준 (영문 kebab-case, servers.conf의 group과 동일 규칙)
   }]
 }
 

@@ -20,7 +20,8 @@ cat > "$PARSER" << 'PYEOF'
 import sys, re, time, json, os
 
 alias      = sys.argv[1]
-cache_file = sys.argv[2] if len(sys.argv) > 2 else None
+group      = sys.argv[2]
+cache_file = sys.argv[3] if len(sys.argv) > 3 else None
 data       = sys.stdin.read()
 
 parts    = data.split('___SEP___')
@@ -65,7 +66,7 @@ for line in proc_raw.splitlines():
                 if d_total > 0:
                     usage = round((d_total - d_idle) / d_total * 100, 2)
                     add('server_cpu_usage_percent', 'CPU 사용률 (%)', 'gauge',
-                        f'server_cpu_usage_percent{{server="{alias}"}} {usage}')
+                        f'server_cpu_usage_percent{{server="{alias}",group="{group}"}} {usage}')
         break
 
 # ── Memory ────────────────────────────────────────────────────────────────────
@@ -76,8 +77,8 @@ for line in proc_raw.splitlines():
         mem[m.group(1)] = int(m.group(2)) * 1024
 
 if 'MemTotal' in mem and 'MemAvailable' in mem:
-    add('server_memory_total_bytes',     '전체 메모리 (bytes)',      'gauge', f'server_memory_total_bytes{{server="{alias}"}} {mem["MemTotal"]}')
-    add('server_memory_available_bytes', '사용 가능 메모리 (bytes)', 'gauge', f'server_memory_available_bytes{{server="{alias}"}} {mem["MemAvailable"]}')
+    add('server_memory_total_bytes',     '전체 메모리 (bytes)',      'gauge', f'server_memory_total_bytes{{server="{alias}",group="{group}"}} {mem["MemTotal"]}')
+    add('server_memory_available_bytes', '사용 가능 메모리 (bytes)', 'gauge', f'server_memory_available_bytes{{server="{alias}",group="{group}"}} {mem["MemAvailable"]}')
 
 # ── Network ───────────────────────────────────────────────────────────────────
 SKIP_IFACE = ('lo', 'veth', 'br-', 'docker', 'flannel', 'cali', 'cilium')
@@ -96,9 +97,9 @@ for line in proc_raw.splitlines():
         nums = stat_part.split()
         if len(nums) >= 9:
             add('server_network_receive_bytes_total',  '네트워크 수신 누적 (bytes)', 'counter',
-                f'server_network_receive_bytes_total{{server="{alias}",interface="{iface}"}} {nums[0]}')
+                f'server_network_receive_bytes_total{{server="{alias}",group="{group}",interface="{iface}"}} {nums[0]}')
             add('server_network_transmit_bytes_total', '네트워크 송신 누적 (bytes)', 'counter',
-                f'server_network_transmit_bytes_total{{server="{alias}",interface="{iface}"}} {nums[8]}')
+                f'server_network_transmit_bytes_total{{server="{alias}",group="{group}",interface="{iface}"}} {nums[8]}')
 
 # ── Disk ──────────────────────────────────────────────────────────────────────
 SKIP_FS = {'tmpfs', 'devtmpfs', 'squashfs', 'udev', 'overlay', 'shm', 'cgroup', 'cgroup2'}
@@ -118,15 +119,15 @@ for line in df_raw.splitlines():
         total = int(cols[1]) * 1024
         used  = int(cols[2]) * 1024
         add('server_disk_total_bytes', '디스크 전체 크기 (bytes)', 'gauge',
-            f'server_disk_total_bytes{{server="{alias}",mountpoint="{mount}"}} {total}')
+            f'server_disk_total_bytes{{server="{alias}",group="{group}",mountpoint="{mount}"}} {total}')
         add('server_disk_used_bytes',  '디스크 사용량 (bytes)',    'gauge',
-            f'server_disk_used_bytes{{server="{alias}",mountpoint="{mount}"}} {used}')
+            f'server_disk_used_bytes{{server="{alias}",group="{group}",mountpoint="{mount}"}} {used}')
     except ValueError:
         pass
 
 # ── 수집 시각 ─────────────────────────────────────────────────────────────────
 add('server_metrics_collected_timestamp', '마지막 수집 시각 (Unix timestamp)', 'gauge',
-    f'server_metrics_collected_timestamp{{server="{alias}"}} {int(time.time())}')
+    f'server_metrics_collected_timestamp{{server="{alias}",group="{group}"}} {int(time.time())}')
 
 # ── 출력 (HELP/TYPE 메트릭명당 1회) ──────────────────────────────────────────
 out = []
@@ -171,8 +172,9 @@ monitor_rotation() {
         sleep "$CHECK_INTERVAL"
         while IFS= read -r line || [ -n "$line" ]; do
             [[ -z "$line" || "$line" =~ ^# ]] && continue
-            read -r alias _ _ <<< "$line"
-            local prom_file="$METRICS_DIR/${alias}.prom"
+            read -r alias _ _ group <<< "$line"
+            group="${group:-default}"
+            local prom_file="$METRICS_DIR/${group}-${alias}.prom"
             if [ -f "$prom_file" ] && [ "$(file_size_mb "$prom_file")" -ge "$MAX_SIZE_MB" ]; then
                 rotate_prom "$prom_file"
             fi
@@ -183,13 +185,14 @@ monitor_rotation() {
 collect_server() {
     local alias="$1"
     local ssh_host="$2"
-    local out_file="$METRICS_DIR/${alias}.prom"
-    local cache_file="$METRICS_DIR/.cpu_${alias}.cache"
+    local group="$3"
+    local out_file="$METRICS_DIR/${group}-${alias}.prom"
+    local cache_file="$METRICS_DIR/.cpu_${group}-${alias}.cache"
     local tmp_file="${out_file}.tmp"
 
     trap 'exit 0' TERM INT
 
-    echo "[metrics] $alias ($ssh_host): 수집 시작"
+    echo "[metrics] $alias ($ssh_host) [$group]: 수집 시작"
 
     while true; do
         raw=$(ssh \
@@ -202,7 +205,7 @@ collect_server() {
             "cat /proc/stat /proc/meminfo /proc/net/dev && printf '\n___SEP___\n' && df -P 2>/dev/null" \
             2>/dev/null)
 
-        if [ -n "$raw" ] && echo "$raw" | python3 "$PARSER" "$alias" "$cache_file" > "$tmp_file" 2>/dev/null; then
+        if [ -n "$raw" ] && echo "$raw" | python3 "$PARSER" "$alias" "$group" "$cache_file" > "$tmp_file" 2>/dev/null; then
             mv "$tmp_file" "$out_file"
         else
             rm -f "$tmp_file"
@@ -222,8 +225,9 @@ fi
 
 while IFS= read -r line || [ -n "$line" ]; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
-    read -r alias ssh_host _rest <<< "$line"
-    collect_server "$alias" "$ssh_host" &
+    read -r alias ssh_host _service group <<< "$line"
+    group="${group:-default}"
+    collect_server "$alias" "$ssh_host" "$group" &
     PIDS+=($!)
 done < "$ROOT/servers.conf"
 

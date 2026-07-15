@@ -9,6 +9,9 @@ config/alloy/alloy-config.alloy
 scripts/start-alloy.sh
 scripts/start-alloy.bat
 
+# generate-dashboards.py가 servers.conf의 group마다 생성하는 대시보드 폴더
+config/grafana/provisioning/dashboards/*/
+
 # ~/.gitignore_global에 docker가 있는 경우 이 프로젝트에서 제외
 !docker/
 

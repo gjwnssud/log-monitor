@@ -78,7 +78,7 @@
         {
           "refId": "A",
           "expr": "server_cpu_usage_percent{server=~\"$server\"}",
-          "legendFormat": "{{server}}"
+          "legendFormat": "{{group}}/{{server}}"
         }
       ],
       "options": {
@@ -143,7 +143,7 @@
         {
           "refId": "A",
           "expr": "(1 - server_memory_available_bytes{server=~\"$server\"} / server_memory_total_bytes{server=~\"$server\"}) * 100",
-          "legendFormat": "{{server}}"
+          "legendFormat": "{{group}}/{{server}}"
         }
       ],
       "options": {
@@ -208,7 +208,7 @@
         {
           "refId": "A",
           "expr": "rate(server_network_receive_bytes_total{server=~\"$server\"}[5m])",
-          "legendFormat": "{{server}} {{interface}}"
+          "legendFormat": "{{group}}/{{server}} {{interface}}"
         }
       ],
       "options": {
@@ -258,7 +258,7 @@
         {
           "refId": "A",
           "expr": "rate(server_network_transmit_bytes_total{server=~\"$server\"}[5m])",
-          "legendFormat": "{{server}} {{interface}}"
+          "legendFormat": "{{group}}/{{server}} {{interface}}"
         }
       ],
       "options": {
@@ -321,7 +321,7 @@
         {
           "refId": "A",
           "expr": "server_disk_used_bytes{server=~\"$server\", mountpoint=\"/\"} / server_disk_total_bytes{server=~\"$server\", mountpoint=\"/\"} * 100",
-          "legendFormat": "{{server}}"
+          "legendFormat": "{{group}}/{{server}}"
         }
       ],
       "options": {

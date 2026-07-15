@@ -19,7 +19,8 @@ Get-Content $ServersConf | ForEach-Object {
     $line = $_.Trim()
     if ($line -and -not $line.StartsWith('#')) {
         $parts = $line -split '\s+'
-        $servers += @{ alias = $parts[0]; sshHost = $parts[1]; service = $parts[2] }
+        $group = if ($parts.Length -ge 4) { $parts[3] } else { 'default' }
+        $servers += @{ alias = $parts[0]; sshHost = $parts[1]; service = $parts[2]; group = $group }
     }
 }
 
@@ -63,8 +64,8 @@ Write-Host "[stream] SSH 로그 스트리밍 시작"
 Write-Host ""
 
 foreach ($server in $servers) {
-    $logFile = Join-Path $LogDir "$($server.alias).log"
-    Write-Host "[stream] $($server.alias) -> $($server.sshHost) ($($server.service))"
+    $logFile = Join-Path $LogDir "$($server.group)-$($server.alias).log"
+    Write-Host "[stream] $($server.alias) -> $($server.sshHost) ($($server.service)) [$($server.group)]"
     $p = New-SSHProcess $server.sshHost $server.service $logFile
     [void]$streamers.Add([PSCustomObject]@{ server = $server; process = $p; logFile = $logFile })
 }

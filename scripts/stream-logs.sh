@@ -49,8 +49,9 @@ monitor_rotation() {
     sleep "$CHECK_INTERVAL"
     while IFS= read -r line || [ -n "$line" ]; do
       [[ -z "$line" || "$line" =~ ^# ]] && continue
-      read -r alias _ _ <<< "$line"
-      local log_file="$LOG_DIR/${alias}.log"
+      read -r alias _ _ group <<< "$line"
+      group="${group:-default}"
+      local log_file="$LOG_DIR/${group}-${alias}.log"
       if [ -f "$log_file" ] && [ "$(file_size_mb "$log_file")" -ge "$MAX_SIZE_MB" ]; then
         rotate_log "$log_file"
       fi
@@ -62,7 +63,8 @@ stream_server() {
   local alias="$1"
   local ssh_host="$2"
   local service="$3"
-  local log_file="$LOG_DIR/${alias}.log"
+  local group="$4"
+  local log_file="$LOG_DIR/${group}-${alias}.log"
   local ssh_pid
 
   trap 'kill "$ssh_pid" 2>/dev/null; exit 0' TERM INT
@@ -84,9 +86,10 @@ echo ""
 while IFS= read -r line || [ -n "$line" ]; do
   [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-  read -r alias ssh_host service <<< "$line"
-  echo "[stream] ${alias} → ${ssh_host} (${service})"
-  stream_server "$alias" "$ssh_host" "$service" &
+  read -r alias ssh_host service group <<< "$line"
+  group="${group:-default}"
+  echo "[stream] ${alias} → ${ssh_host} (${service}) [${group}]"
+  stream_server "$alias" "$ssh_host" "$service" "$group" &
   PIDS+=($!)
 done < "$ROOT/servers.conf"
 

@@ -11,6 +11,7 @@ loki.source.journal "local" {
   labels = {
     job    = "logs",
     server = "SERVER_ALIAS",  // 이 서버를 식별할 이름으로 변경
+    group  = "GROUP_NAME",    // 대시보드 분리 기준 (영문 kebab-case, servers.conf의 group과 동일 규칙)
   }
 
   // 특정 서비스만 수집할 경우 아래 주석 해제 후 서비스명 수정

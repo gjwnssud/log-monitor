@@ -1,10 +1,27 @@
 # 서버 목록 설정
-# 형식: alias  ssh-host  service-name
-# alias       : 로그 파일명 및 Grafana 라벨로 사용 (영문, 숫자, 하이픈만)
-# ssh-host    : ~/.ssh/config에 등록된 Host명 또는 IP
+# 형식: alias  ssh-host  service-name  group
+# alias       : 로그 파일명·Grafana server 라벨로 사용 (영문, 숫자, 하이픈만)
+#               group이 다르면 alias가 겹쳐도 됩니다 (group+alias 조합으로 서로 다른
+#               서버를 구분). 같은 group 안에서는 alias가 유일해야 합니다.
+# ssh-host    : ~/.ssh/config에 등록된 Host명 또는 IP (실제 서버이므로 항상 유일해야 함)
 # service-name: journalctl -u [service-name] 에 사용되는 systemd 서비스명
+# group       : 대시보드 분리 기준이자 Grafana group 라벨. 영문 kebab-case 권장
+#               (한글/공백은 라벨 값·파일명·폴더명에 그대로 쓰이므로 피할 것).
+#               같은 group끼리 Grafana 폴더 하나 + 대시보드 세트(서버 리소스/로그
+#               모니터링)로 setup 시 자동 생성됩니다.
+#               생략하면 "default" 그룹으로 처리됩니다.
+#               예: "[환경]-[서비스명]"으로 적으면 어떤 환경의 어떤 서비스용
+#               대시보드인지 폴더명만 보고 알 수 있습니다 (demo-payment 등).
 
-controller  bastion-host   my-controller-service
-server-1    app-server-1   my-app-service
-server-2    app-server-2   my-app-service
-server-3    app-server-3   my-app-service
+# 시연망 - 결제 서비스
+controller  bastion-host   my-controller-service   demo-payment
+server-1    app-server-1   my-app-service          demo-payment
+server-2    app-server-2   my-app-service          demo-payment
+
+# 실서버 - 결제 서비스 (alias를 시연망과 동일하게 재사용 가능)
+controller  p-bastion-host p-my-controller-service prod-payment
+server-1    p-app-server-1 p-my-app-service        prod-payment
+server-2    p-app-server-2 p-my-app-service        prod-payment
+
+# 실서버 - 인증 서비스 (서비스가 다르면 group도 다르게)
+auth-1      auth-server-1  my-auth-service         prod-auth

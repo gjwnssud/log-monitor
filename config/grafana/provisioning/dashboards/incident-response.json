@@ -53,9 +53,9 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (server) (count_over_time({job=\"logs\", server=~\"$server\"}[$__interval]))",
+          "expr": "sum by (group, server) (count_over_time({job=\"logs\", server=~\"$server\"}[$__interval]))",
           "queryType": "range",
-          "legendFormat": "{{server}}"
+          "legendFormat": "{{group}}/{{server}}"
         }
       ],
       "options": {
@@ -507,9 +507,9 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({job=\"logs\",level=~\"ERROR|FATAL\",server=~\"$server\"}[$__interval])) by (server) * 60",
+          "expr": "sum(rate({job=\"logs\",level=~\"ERROR|FATAL\",server=~\"$server\"}[$__interval])) by (group, server) * 60",
           "queryType": "range",
-          "legendFormat": "{{server}}"
+          "legendFormat": "{{group}}/{{server}}"
         }
       ],
       "options": {
@@ -567,19 +567,19 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({job=\"logs\",level=\"ERROR\",server=~\"$server\"}[$__range])) by (server)",
+          "expr": "sum(count_over_time({job=\"logs\",level=\"ERROR\",server=~\"$server\"}[$__range])) by (group, server)",
           "queryType": "instant",
           "legendFormat": "ERROR"
         },
         {
           "refId": "B",
-          "expr": "sum(count_over_time({job=\"logs\",level=\"WARN\",server=~\"$server\"}[$__range])) by (server)",
+          "expr": "sum(count_over_time({job=\"logs\",level=\"WARN\",server=~\"$server\"}[$__range])) by (group, server)",
           "queryType": "instant",
           "legendFormat": "WARN"
         },
         {
           "refId": "C",
-          "expr": "sum(count_over_time({job=\"logs\",level=\"FATAL\",server=~\"$server\"}[$__range])) by (server)",
+          "expr": "sum(count_over_time({job=\"logs\",level=\"FATAL\",server=~\"$server\"}[$__range])) by (group, server)",
           "queryType": "instant",
           "legendFormat": "FATAL"
         }
@@ -656,6 +656,28 @@
               {
                 "id": "custom.width",
                 "value": 220
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "group"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
               },
               {
                 "id": "custom.align",

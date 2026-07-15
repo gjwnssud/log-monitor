@@ -14,17 +14,19 @@ templates:
       {{- end }}
       ━━━━━━━━━━━━━━━━━━━
       🖥 서버: {{ index .Labels "server" }}
+      📦 그룹: {{ index .Labels "group" }}
       📊 {{ .Annotations.description }}
       ⏰ 발생: {{ .StartsAt.Local.Format "01/02 15:04" }} ~ 진행 중
-      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident?var-server={{ index .Labels "server" }}&var-level={{ index .Labels "level" }}&from={{ .StartsAt.UnixMilli }}&to=now
+      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident-{{ index .Labels "group" }}?var-server={{ index .Labels "server" }}&var-level={{ index .Labels "level" }}&from={{ .StartsAt.UnixMilli }}&to=now
       {{ end -}}
       {{- else -}}
       {{- range .Alerts.Resolved }}
       ✅ [알림 해제] {{ index .Labels "alertname" }}
       ━━━━━━━━━━━━━━━━━━━
       🖥 서버: {{ index .Labels "server" }}
+      📦 그룹: {{ index .Labels "group" }}
       ⏰ {{ .StartsAt.Local.Format "01/02 15:04" }} ~ {{ .EndsAt.Local.Format "01/02 15:04" }}
-      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident?var-server={{ index .Labels "server" }}&var-level={{ index .Labels "level" }}&from={{ .StartsAt.UnixMilli }}&to={{ .EndsAt.UnixMilli }}
+      🔗 __GRAFANA_EXTERNAL_URL__/d/spring-boot-incident-{{ index .Labels "group" }}?var-server={{ index .Labels "server" }}&var-level={{ index .Labels "level" }}&from={{ .StartsAt.UnixMilli }}&to={{ .EndsAt.UnixMilli }}
       {{ end -}}
       {{- end -}}
       {{- end }}

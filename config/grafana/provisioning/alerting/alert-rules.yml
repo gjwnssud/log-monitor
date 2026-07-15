@@ -18,7 +18,7 @@ groups:
               to: 0
             datasourceUid: loki
             model:
-              expr: 'sum by (server) (count_over_time({job="logs",level="FATAL"}[5m]))'
+              expr: 'sum by (server, group) (count_over_time({job="logs",level="FATAL"}[5m]))'
               instant: true
               range: false
               refId: A
@@ -56,7 +56,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: "{{ $labels.server }} 서버 — FATAL {{ $values.B }}건 감지 (최근 5분)"
+          description: "{{ $labels.server }} 서버 ({{ $labels.group }}) — FATAL {{ $values.B }}건 감지 (최근 5분)"
         labels:
           severity: critical
           level: FATAL
@@ -73,7 +73,7 @@ groups:
               to: 0
             datasourceUid: loki
             model:
-              expr: 'sum by (server) (count_over_time({job="logs",level="ERROR"}[5m]))'
+              expr: 'sum by (server, group) (count_over_time({job="logs",level="ERROR"}[5m]))'
               instant: true
               range: false
               refId: A
@@ -111,7 +111,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.server }} 서버 — ERROR {{ $values.B }}건 감지 (최근 5분, 임계값 30건 초과)"
+          description: "{{ $labels.server }} 서버 ({{ $labels.group }}) — ERROR {{ $values.B }}건 감지 (최근 5분, 임계값 30건 초과)"
         labels:
           severity: warning
           level: ERROR

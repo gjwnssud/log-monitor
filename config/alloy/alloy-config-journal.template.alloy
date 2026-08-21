@@ -27,6 +27,16 @@ loki.source.journal "local" {
 loki.process "log4j2" {
   forward_to = [loki.write.default.receiver]
 
+  // 스택트레이스 등 멀티라인 로그 병합 ([%p] 레벨 태그로 시작하지 않는 줄은 직전 줄에 이어붙임)
+  // firstline 정규식은 아래 레벨 추출 패턴과 항상 동일하게 맞출 것 — 포맷을 바꾸면 같이 교체
+  //   [%p]    형식: \[(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]
+  //   %-5level 형식: \b(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\b
+  stage.multiline {
+    firstline     = `\[(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]`
+    max_wait_time = "3s"
+    max_lines     = 128
+  }
+
   stage.regex {
     expression = `\[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]`
   }

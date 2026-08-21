@@ -26,7 +26,15 @@ loki.source.file "local" {
 loki.process "log4j2" {
   forward_to = [loki.write.default.receiver]
 
-  // [1] 로그 발생 시간 추출 (수집 시간이 아닌 실제 이벤트 시간 기준으로 Loki에 저장)
+  // [1] 스택트레이스 등 멀티라인 로그 병합 (아래 패턴으로 시작하지 않는 줄은 직전 줄에 이어붙임)
+  // firstline 정규식은 [2]의 log_time 추출 패턴과 항상 동일하게 맞출 것 — 포맷을 바꾸면 같이 교체
+  stage.multiline {
+    firstline     = `^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`
+    max_wait_time = "3s"
+    max_lines     = 128
+  }
+
+  // [2] 로그 발생 시간 추출 (수집 시간이 아닌 실제 이벤트 시간 기준으로 Loki에 저장)
   // log4j2 파일 직접 포맷: "[2026-06-01T17:24:32,471] [ERROR] ..."
   // 포맷이 다르면 expression / format 쌍을 교체:
   //   log4j2 파일 직접 포맷:   ^\[(?P<log_time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})               → format = "2006-01-02T15:04:05"
@@ -40,7 +48,7 @@ loki.process "log4j2" {
     format = "2006-01-02T15:04:05"
   }
 
-  // [2] log4j2 레벨 추출 → Loki 라벨로 등록
+  // [3] log4j2 레벨 추출 → Loki 라벨로 등록
   // [%p]    형식 (예: [ERROR]):  \[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\]
   // %-5level 형식 (예: ERROR  ): \b(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\b
   stage.regex {
